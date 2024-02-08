@@ -26,10 +26,9 @@ class Project:
 	def __init__(self, id: int, name: str, **kwargs):
 		self._id: int = id
 		self._name: str = name
-		# type only appears in GET /projects
-		self._type: str = kwargs.get('type')
 		self._client: RestClient = kwargs.get('client')
-		if self._type:
+		# type only appears in GET /projects
+		if kwargs.get('type'):
 			# if type is present then no other information is present
 			self._description = None
 			self._description_format = None
