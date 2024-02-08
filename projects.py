@@ -145,9 +145,9 @@ class Project:
 		self._closed = project_data.get('closed')
 		self._deleted = project_data.get('deleted')
 		self._template = project_data.get('template')
-		self._created_at = project_data.get('createdAt')
+		self._created_at = datetime.strptime(project_data.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
 		self._created_by = project_data.get('createdBy')
-		self._modified_at = project_data.get('modifiedAt')
+		self._modified_at = datetime.strptime(project_data.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
 		self._modified_by = project_data.get('modifiedBy')
 
 	def __repr__(self) -> str:
