@@ -199,3 +199,15 @@ class User:
 		self._registry_date = datetime.strptime(user_data.get('registryDate'), '%Y-%m-%dT%H:%M:%S.%f')
 		self._last_login_date = datetime.strptime(user_data.get('lastLoginDate'), '%Y-%m-%dT%H:%M:%S.%f')
 		self._status = user_data.get('status')
+
+	def __repr__(self) -> str:
+		return f'User(id={self.id}, name={self.name})'
+	
+	def __str__(self) -> str:
+		return self.name
+	
+	def __eq__(self, o: object) -> bool:
+		return isinstance(o, User) and self.id == o.id
+	
+	def __lt__(self, o: object) -> bool:
+		return isinstance(o, User) and self.id < o.id

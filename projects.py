@@ -5,6 +5,7 @@ from loguru import logger
 from datetime import datetime
 
 from .rest_client import RestClient
+from .user import User
 
 class Project:
 	"""Represents a project in codeBeamer."""
@@ -19,9 +20,9 @@ class Project:
 		_deleted: bool | None
 		_template: bool | None
 		_created_at: datetime | None
-		_created_by: dict[str, Any] | None # TODO: Replace with User
+		_created_by: User | None
 		_modified_at: datetime | None
-		_modified_by: dict[str, Any] | None # TODO: Replace with User
+		_modified_by: User | None
 
 	def __init__(self, id: int, name: str, **kwargs):
 		self._id: int = id
@@ -52,9 +53,9 @@ class Project:
 			self._deleted = kwargs.get('deleted')
 			self._template = kwargs.get('template')
 			self._created_at = datetime.strptime(kwargs.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
-			self._created_by = kwargs.get('createdBy')
+			self._created_by = User(**kwargs.get('createdBy'), client=self._client)
 			self._modified_at = datetime.strptime(kwargs.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
-			self._modified_by = kwargs.get('modifiedBy')
+			self._modified_by = User(**kwargs.get('modifiedBy'), client=self._client)
 
 	@property
 	def id(self) -> int:
@@ -112,7 +113,7 @@ class Project:
 		return self._created_at
 
 	@property
-	def created_by(self) -> dict[str, Any] | None: # TODO: Replace with User
+	def created_by(self) -> User | None:
 		"""The user that created the project."""
 		return self._created_by
 
@@ -122,7 +123,7 @@ class Project:
 		return self._modified_at
 
 	@property
-	def modified_by(self) -> dict[str, Any] | None: # TODO: Replace with User
+	def modified_by(self) -> User | None:
 		"""The user that last modified the project."""
 		return self._modified_by
 
@@ -146,9 +147,9 @@ class Project:
 		self._deleted = project_data.get('deleted')
 		self._template = project_data.get('template')
 		self._created_at = datetime.strptime(project_data.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
-		self._created_by = project_data.get('createdBy')
+		self._created_by = User(**project_data.get('createdBy'), client=self._client)
 		self._modified_at = datetime.strptime(project_data.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
-		self._modified_by = project_data.get('modifiedBy')
+		self._modified_by = User(**project_data.get('modifiedBy'), client=self._client)
 
 	def __repr__(self) -> str:
 		return f'Project(id={self.id}, name={self.name})'
