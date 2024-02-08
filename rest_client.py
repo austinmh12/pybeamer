@@ -47,6 +47,7 @@ class RestClient:
 		headers: dict[str, Any] | None = None,
 		files: dict[str, Any] | None = None,
 	) -> dict[str, Any] | str:
+		# TODO: Need to handle 429 tooManyRequests responses
 		path = self.resource_url(path)
 		url = self.url_joiner(self.url, path)
 		if params or flags:
