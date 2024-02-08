@@ -5,6 +5,7 @@ from typing import Any
 from requests import Session, Response
 from requests.exceptions import HTTPError
 from urllib.parse import urlencode
+from time import sleep
 
 class RestClient:
 	default_headers = {'Content-Type': 'application/json'}
@@ -69,6 +70,22 @@ class RestClient:
 		)
 		logger.debug(f'HTTP: {method} {path} -> {response.status_code} {response.reason}')
 		logger.debug(f'HTTP: Response text -> {response.text}')
+		if response.status_code == 429:
+			# Rate-limiting. Just wait and run the query again
+			logger.debug(f'Sleeping for {int(response.headers["Retry-After"])}')
+			sleep(int(response.headers['Retry-After']))
+			response = self._session.request(
+				method=method,
+				url=url,
+				headers=headers,
+				data=data,
+				json=json_,
+				timeout=self.timeout,
+				files=files,
+				verify=False
+			)
+			logger.debug(f'HTTP: {method} {path} -> {response.status_code} {response.reason}')
+			logger.debug(f'HTTP: Response text -> {response.text}')
 		try:
 			if response.text:
 				response_content = response.json()
