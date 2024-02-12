@@ -11,5 +11,4 @@ from .projects import Project
 
 __all__ = [
 	'Codebeamer',
-	'Project',
 ]
