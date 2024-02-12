@@ -6,6 +6,7 @@ from loguru import logger
 
 from .rest_client import RestClient
 from .user import User
+from .tracker_item import TrackerItem
 from .utils import loadable
 
 if TYPE_CHECKING:
@@ -42,7 +43,7 @@ class Tracker:
 		self._client: RestClient = kwargs.get('client')
 		# Want to try and get this regardless of type since it can come from the Project class
 		self._project = kwargs.get('project')
-		# type only appears in GET /projects/{trackerId}/trackers
+		# type only appears in GET /projects/{projectId}/trackers
 		_type = kwargs.get('type')
 		if isinstance(_type, str):
 			# if type is present then no other information is present
@@ -248,6 +249,12 @@ class Tracker:
 		self._available_as_template = tracker_data.get('availableAsTemplate')
 		self._shared_in_working_set = tracker_data.get('sharedInWorkingSet')
 		self._loaded = True
+
+	def get_tracker_items(self) -> list[TrackerItem]:
+		"""Fetches the items in this tracker.
+		
+		Returns:
+		list[`TrackerItem`] — A list of the items in this tracker."""
 
 	def __repr__(self) -> str:
 		return f'Tracker(id={self.id}, name={self.name})'
