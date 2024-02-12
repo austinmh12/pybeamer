@@ -281,6 +281,20 @@ class Tracker:
 	def get_items(self, page: int = 0, page_size: int = 25) -> list[TrackerItem]:
 		"""Alias for get_tracker_items."""
 		return self.get_tracker_items(page=page, page_size=page_size)
+	
+	def get_fields(self):
+		"""Fetches the available field names for this tracker."""
+		# GET trackers/{self.id}/fields
+
+	def get_field(self, field: str | int):
+		"""Fetches detailed information about the field for the tracker."""
+		# GET trackers/{self.id}/fields/{fieldId}
+
+	def _get_field_by_id(self, id: int):
+		...
+
+	def _get_field_by_name(self, name: str):
+		...
 
 	def __repr__(self) -> str:
 		return f'Tracker(id={self.id}, name={self.name})'

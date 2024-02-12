@@ -230,7 +230,7 @@ class TrackerItem:
 	@property
 	@loadable
 	def children(self) -> list[TrackerItem] | None:
-		"""A list of this item's children."""
+		"""A list of this item's children. Only has the first 25 until `TrackerItem.get_children` is called."""
 		return self._children
 
 	@property
@@ -442,6 +442,28 @@ class TrackerItem:
 		self._comments = item_data.get('comments')
 		self._tags = item_data.get('tags')
 		self._loaded = True
+
+	def get_children(self, page: int = 0, page_size: int = 25) -> list[TrackerItem]:
+		"""Fetches all the child items of the current item."""
+		# GET items/{self.id}/children
+
+	def update_children(self, mode: str):
+		"""Insert, replace, or remove children from the item."""
+		# PATCH items/{self.id}/children
+
+	def add_child(self, item: int | TrackerItem):
+		"""Add an item as a child to this item."""
+		# POST items/{self.id}/children
+
+	def get_fields(self):
+		"""Gets the field information for the item. This groups the fields into four 
+		categories: editable, editable table, read-only, and read-only table fields."""
+		# GET items/{self.id}/fields
+		# TODO: This should be called with _load so that custom setter functions can leverage the info
+
+	def get_field(self, field: str | int):
+		"""Fetches a specific field from the tracker this item is in."""
+		return self.tracker.get_field(field)
 
 	def __repr__(self) -> str:
 		return f'TrackerItem(id={self.id}, name={self.name})'
