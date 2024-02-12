@@ -7,6 +7,7 @@ from datetime import datetime
 from .rest_client import RestClient
 from .user import User
 from .tracker import Tracker
+from .utils import loadable
 
 class Project:
 	"""Represents a project in codeBeamer."""
@@ -24,6 +25,7 @@ class Project:
 		_created_by: User | None
 		_modified_at: datetime | None
 		_modified_by: User | None
+		_loaded: bool
 
 	def __init__(self, id: int, name: str, **kwargs):
 		self._id: int = id
@@ -44,6 +46,7 @@ class Project:
 			self._created_by = None
 			self._modified_at = None
 			self._modified_by = None
+			self._loaded = False
 		else:
 			self._description = kwargs.get('description')
 			self._description_format = kwargs.get('descriptionFormat')
@@ -57,6 +60,7 @@ class Project:
 			self._created_by = User(**kwargs.get('createdBy'), client=self._client)
 			self._modified_at = datetime.strptime(kwargs.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
 			self._modified_by = User(**kwargs.get('modifiedBy'), client=self._client)
+			self._loaded = True
 
 	@property
 	def id(self) -> int:
@@ -69,66 +73,78 @@ class Project:
 		return self._name
 
 	@property
+	@loadable
 	def description(self) -> str | None:
 		"""The project description."""
 		return self._description
 
 	@property
+	@loadable
 	def description_format(self) -> str | None:
 		"""The format of the project description."""
 		return self._description_format
 
 	@property
+	@loadable
 	def version(self) -> int | None:
 		"""The project version."""
 		return self._version
 
 	@property
+	@loadable
 	def key_name(self) -> str | None:
 		"""The project key identifier."""
 		return self._key_name
 
 	@property
+	@loadable
 	def category(self) -> str | None:
 		"""The category of the project."""
 		return self._category
 
 	@property
+	@loadable
 	def closed(self) -> bool | None:
 		"""Flag for whether the project is closed or not."""
 		return self._closed
 
 	@property
+	@loadable
 	def deleted(self) -> bool | None:
 		"""Flag for whether the project is deleted or not."""
 		return self._deleted
 
 	@property
+	@loadable
 	def template(self) -> bool | None:
 		"""Flag for whether the project is a template or not."""
 		return self._template
 
 	@property
+	@loadable
 	def created_at(self) -> datetime | None:
 		"""The datetime the project was created at."""
 		return self._created_at
 
 	@property
+	@loadable
 	def created_by(self) -> User | None:
 		"""The user that created the project."""
 		return self._created_by
 
 	@property
+	@loadable
 	def modified_at(self) -> datetime | None:
 		"""The datetime the project was last modified."""
 		return self._modified_at
 
 	@property
+	@loadable
 	def modified_by(self) -> User | None:
 		"""The user that last modified the project."""
 		return self._modified_by
 
-	def load(self):
+	def _load(self):
 		"""Loads the rest of the project's data. When a project is fetched using 
 		`Codebeamer.get_projects` only the ID and Name of the project are retrieved. 
 		This prevents a lot of extra data that's not needed from being sent. Thus, 
@@ -137,7 +153,7 @@ class Project:
 		# TODO: Determine if load should be hidden and called when the property is missing
 		# i.e. if user calls project.key_name and it's None and self._loaded is False
 		# then call self._load()
-		if self.created_at:
+		if self._loaded:
 			logger.info('Project already loaded, ignoring...')
 			return
 		project_data: dict[str, Any] = self._client.get(f'projects/{self.id}')
@@ -154,6 +170,7 @@ class Project:
 		self._created_by = User(**project_data.get('createdBy'), client=self._client)
 		self._modified_at = datetime.strptime(project_data.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
 		self._modified_by = User(**project_data.get('modifiedBy'), client=self._client)
+		self._loaded = True
 
 	def get_trackers(self) -> list[Tracker]:
 		"""Fetches all the trackers in this project.

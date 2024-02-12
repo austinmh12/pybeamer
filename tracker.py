@@ -6,6 +6,7 @@ from loguru import logger
 
 from .rest_client import RestClient
 from .user import User
+from .utils import loadable
 
 if TYPE_CHECKING:
 	from .projects import Project
@@ -33,6 +34,7 @@ class Tracker:
 		_project: Project | None
 		_available_as_template: bool | None
 		_shared_in_working_set: bool | None
+		_loaded: bool
 
 	def __init__(self, id: int, name: str, **kwargs):
 		self._id: int = id
@@ -63,6 +65,7 @@ class Tracker:
 			self._default_show_descendant_items = None
 			self._available_as_template = None
 			self._shared_in_working_set = None
+			self._loaded = False
 		else:
 			self._description = kwargs.get('description')
 			self._description_format = kwargs.get('descriptionFormat')
@@ -83,6 +86,7 @@ class Tracker:
 			self._default_show_descendant_items = kwargs.get('defaultShowDescendantItems')
 			self._available_as_template = kwargs.get('availableAsTemplate')
 			self._shared_in_working_set = kwargs.get('sharedInWorkingSet')
+			self._loaded = True
 
 	@property
 	def id(self) -> int:
@@ -95,112 +99,132 @@ class Tracker:
 		return self._name
 
 	@property
+	@loadable
 	def description(self) -> str | None:
 		"""The description of the tracker."""
 		return self._description
 
 	@property
+	@loadable
 	def description_format(self) -> str | None:
 		"""The format of the tracker's description."""
 		return self._description_format
 
 	@property
+	@loadable
 	def key_name(self) -> str | None:
 		"""The tracker's key name."""
 		return self._key_name
 
 	@property
+	@loadable
 	def version(self) -> int | None:
 		"""The version of the tracker."""
 		return self._version
 
 	@property
+	@loadable
 	def created_at(self) -> datetime | None:
 		"""The datetime the tracker was created."""
 		return self._created_at
 
 	@property
+	@loadable
 	def created_by(self) -> User | None:
 		"""The user that created the tracker."""
 		return self._created_by
 
 	@property
+	@loadable
 	def modified_at(self) -> datetime | None:
 		"""The datetime the tracker was last modified at."""
 		return self._modified_at
 
 	@property
+	@loadable
 	def modified_by(self) -> User | None:
 		"""The user that last modified the tracker."""
 		return self._modified_by
 
 	@property
+	@loadable
 	def type(self) -> dict[str, Any] | None: # TODO: TrackerType 
 		"""The type of tracker."""
 		return self._type
 
 	@property
+	@loadable
 	def deleted(self) -> bool | None:
 		"""Flag for whether the tracker has been deleted or not."""
 		return self._deleted
 
 	@property
+	@loadable
 	def hidden(self) -> bool | None:
 		"""Flag for whether the tracker has been hidden or not."""
 		return self._hidden
 
 	@property
+	@loadable
 	def color(self) -> str | None:
 		"""The tracker's default color."""
 		return self._color
 
 	@property
+	@loadable
 	def using_workflow(self) -> bool | None:
 		"""Flag for whether the tracker is using a workflow or not."""
 		return self._using_workflow
 
 	@property
+	@loadable
 	def only_workflow_can_create_new_referring_item(self) -> bool | None:
 		"""Flag for whether the workflow is the only way to create items that reference other items."""
 		return self._only_workflow_can_create_new_referring_item
 
 	@property
+	@loadable
 	def using_quick_transitions(self) -> bool | None:
 		"""Flag for whether the tracker uses quick transitions."""
 		return self._using_quick_transitions
 
 	@property
+	@loadable
 	def default_show_ancestor_items(self) -> bool | None:
 		"""Flag for whether the tracker shows ancestors of items."""
 		return self._default_show_ancestor_items
 
 	@property
+	@loadable
 	def default_show_descendant_items(self) -> bool | None:
 		"""Flag for whether the tracker shows descendants of items."""
 		return self._default_show_descendant_items
 
 	@property
+	@loadable
 	def project(self) -> Project | None:
 		"""The project the tracker belongs to."""
 		return self._project
 
 	@property
+	@loadable
 	def available_as_template(self) -> bool | None:
 		"""Flag for whether the tracker is a template tracker."""
 		return self._available_as_template
 
 	@property
+	@loadable
 	def shared_in_working_set(self) -> bool | None:
 		"""Flag for whether this tracker is sharable in a working set."""
 		return self._shared_in_working_set
 
-	def load(self):
+	def _load(self):
 		"""Loads the rest of the tracker's data. When a tracker is fetched using 
 		`Project.get_trackers` only the ID and Name of the tracker are retrieved. 
 		This prevents a lot of extra data that's not needed from being sent. Thus, 
 		this method exists to flush out the rest of the tracker information if it is 
 		needed."""
-		if self.key_name:
+		if self._loaded:
 			logger.info('Tracker already loaded, ignoring...')
 			return
 		tracker_data: dict[str, Any] = self._client.get(f'trackers/{self.id}')
@@ -223,6 +247,7 @@ class Tracker:
 		self._default_show_descendant_items = tracker_data.get('defaultShowDescendantItems')
 		self._available_as_template = tracker_data.get('availableAsTemplate')
 		self._shared_in_working_set = tracker_data.get('sharedInWorkingSet')
+		self._loaded = True
 
 	def __repr__(self) -> str:
 		return f'Tracker(id={self.id}, name={self.name})'

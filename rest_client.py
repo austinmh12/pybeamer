@@ -48,7 +48,6 @@ class RestClient:
 		headers: dict[str, Any] | None = None,
 		files: dict[str, Any] | None = None,
 	) -> dict[str, Any] | str:
-		# TODO: Need to handle 429 tooManyRequests responses
 		path = self.resource_url(path)
 		url = self.url_joiner(self.url, path)
 		if params or flags:
@@ -68,8 +67,8 @@ class RestClient:
 			files=files,
 			verify=False
 		)
-		logger.debug(f'HTTP: {method} {path} -> {response.status_code} {response.reason}')
-		logger.debug(f'HTTP: Response text -> {response.text}')
+		logger.trace(f'HTTP: {method} {path} -> {response.status_code} {response.reason}')
+		logger.trace(f'HTTP: Response text -> {response.text}')
 		if response.status_code == 429:
 			# Rate-limiting. Just wait and run the query again
 			logger.debug(f'Sleeping for {int(response.headers["Retry-After"])}')
@@ -84,8 +83,8 @@ class RestClient:
 				files=files,
 				verify=False
 			)
-			logger.debug(f'HTTP: {method} {path} -> {response.status_code} {response.reason}')
-			logger.debug(f'HTTP: Response text -> {response.text}')
+			logger.trace(f'HTTP: {method} {path} -> {response.status_code} {response.reason}')
+			logger.trace(f'HTTP: Response text -> {response.text}')
 		try:
 			if response.text:
 				response_content = response.json()

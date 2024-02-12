@@ -5,6 +5,7 @@ from loguru import logger
 from datetime import datetime
 
 from .rest_client import RestClient
+from .utils import loadable
 
 class User:
 	"""Represents a user in codeBeamer."""
@@ -27,6 +28,7 @@ class User:
 		_registry_date: datetime | None
 		_last_login_date: datetime | None
 		_status: str | None
+		_loaded: bool
 
 	def __init__(self, id: int, name: str, **kwargs):
 		self._id: int = id
@@ -53,6 +55,7 @@ class User:
 			self._registry_date = None
 			self._last_login_date = None
 			self._status = None
+			self._loaded = False
 		else:
 			self._first_name = kwargs.get('firstName')
 			self._last_name = kwargs.get('lastName')
@@ -71,6 +74,7 @@ class User:
 			self._registry_date = datetime.strptime(kwargs.get('registryDate'), '%Y-%m-%dT%H:%M:%S.%f')
 			self._last_login_date = datetime.strptime(kwargs.get('lastLoginDate'), '%Y-%m-%dT%H:%M:%S.%f')
 			self._status = kwargs.get('status')
+			self._loaded = True
 
 	@property
 	def id(self) -> int:
@@ -88,97 +92,114 @@ class User:
 		return self._email
 
 	@property
+	@loadable
 	def first_name(self) -> str | None:
 		"""The first name of the user."""
 		return self._first_name
 
 	@property
+	@loadable
 	def last_name(self) -> str | None:
 		"""The last name of the user."""
 		return self._last_name
 
 	@property
+	@loadable
 	def title(self) -> str | None:
 		"""The title of the user."""
 		return self._title
 
 	@property
+	@loadable
 	def company(self) -> str | None:
 		"""The user's company."""
 		return self._company
 
 	@property
+	@loadable
 	def address(self) -> str | None:
 		"""The user's address."""
 		return self._address
 
 	@property
+	@loadable
 	def zip(self) -> int | None:
 		"""The user's zip code."""
 		return self._zip
 
 	@property
+	@loadable
 	def city(self) -> str | None:
 		"""The user's city."""
 		return self._city
 
 	@property
+	@loadable
 	def state(self) -> str | None:
 		"""The user's state."""
 		return self._state
 
 	@property
+	@loadable
 	def country(self) -> str | None:
 		"""The user's country."""
 		return self._country
 
 	@property
+	@loadable
 	def date_format(self) -> str | None:
 		"""The date format for the user. Determines the browser date's display."""
 		return self._date_format
 
 	@property
+	@loadable
 	def time_zone(self) -> str | None:
 		"""The user's time zone."""
 		return self._time_zone
 
 	@property
+	@loadable
 	def language(self) -> str | None:
 		"""The user's language. Either 'en' or 'de'."""
 		return self._language
 
 	@property
+	@loadable
 	def phone(self) -> str | None:
 		"""The user's phone number."""
 		return self._phone
 
 	@property
+	@loadable
 	def skills(self) -> str | None:
 		"""The user's skills."""
 		return self._skills
 
 	@property
+	@loadable
 	def registry_date(self) -> datetime | None:
 		"""The datetime the user registered."""
 		return self._registry_date
 
 	@property
+	@loadable
 	def last_login_date(self) -> datetime | None:
 		"""The datetime the user last logged in."""
 		return self._last_login_date
 
 	@property
+	@loadable
 	def status(self) -> str | None:
 		"""The status of the user account."""
 		return self._status
 
-	def load(self):
+	def _load(self):
 		"""Loads the rest of the user's data. When a user is fetched using 
 		`Codebeamer.get_users` only the ID, Name, and Email of the user are retrieved. 
 		This prevents a lot of extra data that's not needed from being sent. Thus, 
 		this method exists to flush out the rest of the user information if it is 
 		needed."""
-		if self.registry_date:
+		if self._loaded:
 			logger.info('User already loaded, ignoring...')
 			return
 		user_data: dict[str, Any] = self._client.get(f'users/{self.id}')
@@ -199,6 +220,7 @@ class User:
 		self._registry_date = datetime.strptime(user_data.get('registryDate'), '%Y-%m-%dT%H:%M:%S.%f')
 		self._last_login_date = datetime.strptime(user_data.get('lastLoginDate'), '%Y-%m-%dT%H:%M:%S.%f')
 		self._status = user_data.get('status')
+		self._loaded = True
 
 	def __repr__(self) -> str:
 		return f'User(id={self.id}, name={self.name})'

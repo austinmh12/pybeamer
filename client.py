@@ -50,7 +50,6 @@ class Codebeamer:
 		project = {p.name: p for p in self.get_projects()}.get(name)
 		if project is None:
 			return
-		project.load()
 		return project
 	
 	def get_project_by_key(self, key: str) -> Project | None:
