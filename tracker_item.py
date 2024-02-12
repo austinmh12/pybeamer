@@ -114,6 +114,12 @@ class TrackerItem:
 	def name(self) -> str:
 		""""""
 		return self._name
+	
+	@property
+	@loadable
+	def tracker(self) -> Tracker:
+		""""""
+		return self._tracker
 
 	@property
 	@loadable
