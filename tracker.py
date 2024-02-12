@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 from datetime import datetime
 from loguru import logger
+from math import ceil
 
 from .rest_client import RestClient
 from .user import User
@@ -229,6 +230,8 @@ class Tracker:
 			logger.info('Tracker already loaded, ignoring...')
 			return
 		tracker_data: dict[str, Any] = self._client.get(f'trackers/{self.id}')
+		if not isinstance(self._project, Project):
+			self._project = Project(**tracker_data.get('project'), client=self._client)
 		self._description = tracker_data.get('description')
 		self._description_format = tracker_data.get('descriptionFormat')
 		self._key_name = tracker_data.get('keyName')
@@ -250,11 +253,34 @@ class Tracker:
 		self._shared_in_working_set = tracker_data.get('sharedInWorkingSet')
 		self._loaded = True
 
-	def get_tracker_items(self) -> list[TrackerItem]:
-		"""Fetches the items in this tracker.
+	def get_tracker_items(self, page: int = 0, page_size: int = 25) -> list[TrackerItem]:
+		"""Fetches all the items in this tracker.
+
+		Params:
+		page — The page number to fetch if you want a specific page of items. If 0 then all items are fetched. — int(0)
+		page_size — The number of results per page. Must be between 1 and 500. — int(25)
 		
 		Returns:
 		list[`TrackerItem`] — A list of the items in this tracker."""
+		fetch_all = page == 0
+		if fetch_all:
+			page = 1
+		page_size = max(1, min(500, page_size)) # Clamp page_size between 1 and 500
+		params = {'page': page, 'pageSize': page_size}
+		items: list[TrackerItem] = []
+		item_data = self._client.get(f'trackers/{self.id}/items', params=params)
+		total_pages = ceil(item_data['total'] / page_size)
+		items.extend([TrackerItem(**ti, client=self._client, tracker=self) for ti in item_data['itemRefs']])
+		if fetch_all:
+			while params['page'] < total_pages:
+				params['page'] += 1
+				item_data = self._client.get(f'trackers/{self.id}/items', params=params)
+				items.extend([TrackerItem(**ti, client=self._client, tracker=self) for ti in item_data['itemRefs']])
+		return items
+	
+	def get_items(self, page: int = 0, page_size: int = 25) -> list[TrackerItem]:
+		"""Alias for get_tracker_items."""
+		return self.get_tracker_items(page=page, page_size=page_size)
 
 	def __repr__(self) -> str:
 		return f'Tracker(id={self.id}, name={self.name})'
