@@ -6,6 +6,7 @@ from datetime import datetime
 
 from .rest_client import RestClient
 from .user import User
+from .tracker import Tracker
 
 class Project:
 	"""Represents a project in codeBeamer."""
@@ -133,6 +134,9 @@ class Project:
 		This prevents a lot of extra data that's not needed from being sent. Thus, 
 		this method exists to flush out the rest of the project information if it is 
 		needed."""
+		# TODO: Determine if load should be hidden and called when the property is missing
+		# i.e. if user calls project.key_name and it's None and self._loaded is False
+		# then call self._load()
 		if self.created_at:
 			logger.info('Project already loaded, ignoring...')
 			return
@@ -150,6 +154,33 @@ class Project:
 		self._created_by = User(**project_data.get('createdBy'), client=self._client)
 		self._modified_at = datetime.strptime(project_data.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
 		self._modified_by = User(**project_data.get('modifiedBy'), client=self._client)
+
+	def get_trackers(self) -> list[Tracker]:
+		"""Fetches all the trackers in this project.
+		
+		Returns:
+		list[`Tracker`] — All the trackers under this project."""
+		return [Tracker(**t, client=self._client, project=self) for t in self._client.get(f'projects/{self.id}/trackers')]
+
+	def get_tracker(self, tracker: str | int) -> Tracker | None:
+		"""Fetches a specific tracker from the project.
+		
+		Params:
+		tracker — The name or ID of the tracker to fetch. — str | int
+		
+		Raises:
+		TypeError — A type other than str or int was provided.
+		
+		Returns:
+		`Tracker` — The tracker if it exists under the project."""
+		trackers = self.get_trackers()
+		if isinstance(tracker, int):
+			trackers = {t.id: t for t in trackers}
+		elif isinstance(tracker, str):
+			trackers = {t.name: t for t in trackers}
+		else:
+			raise TypeError(f'expected str or int, got {type(tracker)}')
+		return trackers.get(tracker)
 
 	def __repr__(self) -> str:
 		return f'Project(id={self.id}, name={self.name})'

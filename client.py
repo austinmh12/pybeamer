@@ -7,6 +7,7 @@ from math import ceil
 from .rest_client import RestClient
 from .projects import Project
 from .user import User
+from .tracker import Tracker
 
 class Codebeamer:
 	"""The Codebeamer API client"""
@@ -123,3 +124,36 @@ class Codebeamer:
 			return user
 		except:
 			return
+		
+	def get_tracker(self, tracker: str | int) -> Tracker | None:
+		"""Fetches a specific tracker from the system.
+		
+		Params:
+		tracker — The name or ID of the tracker to fetch. — str | int
+		
+		Raises:
+		TypeError — A type other than str or int was provided.
+		
+		Returns:
+		`Tracker` — The tracker if it exists."""
+		if isinstance(tracker, int):
+			return self._get_tracker_by_id(tracker)
+		elif isinstance(tracker, str):
+			return self._get_tracker_by_name(tracker)
+		else:
+			raise TypeError(f'expected str or int, got {type(tracker)}')
+		
+	def _get_tracker_by_id(self, id: int) -> Tracker | None:
+		try:
+			tracker = Tracker(**self._client.get(f'trackers/{id}'), client=self._client)
+			return tracker
+		except:
+			return
+	
+	def _get_tracker_by_name(self, name: str) -> Tracker | None:
+		# Trackers aren't searchable outside of projects, so all the projects have
+		# to be fetched, each project needs to get it's trackers, then the dict needs
+		# to be made.
+		trackers = {t.name: t for p in self.get_projects() for t in p.get_trackers()}
+		logger.debug(list(trackers.keys()))
+		return trackers.get(name)

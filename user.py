@@ -33,7 +33,7 @@ class User:
 		self._name: str = name
 		self._email: str | None = kwargs.get('email') # Not present for system users
 		self._client: RestClient = kwargs.get('client')
-		# type only appears in GET /projects
+		# type only appears in GET /users
 		if kwargs.get('type'):
 			# if type is present then no other information is present
 			self._first_name = None
