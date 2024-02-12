@@ -8,6 +8,7 @@ from .rest_client import RestClient
 from .projects import Project
 from .user import User
 from .tracker import Tracker
+from .tracker_item import TrackerItem
 
 class Codebeamer:
 	"""The Codebeamer API client"""
@@ -156,3 +157,22 @@ class Codebeamer:
 		trackers = {t.name: t for p in self.get_projects() for t in p.get_trackers()}
 		logger.debug(list(trackers.keys()))
 		return trackers.get(name)
+	
+	def get_tracker_item(self, id: int) -> TrackerItem | None:
+		"""Fetches a specific tracker item.
+		
+		Params:
+		id — The ID of the item to fetch. — int
+		
+		Returns:
+		`TrackerItem` — The tracker item if it exists."""
+		try:
+			item = TrackerItem(**self._client.get(f'items/{id}'), client=self._client)
+			return item
+		except Exception as e:
+			logger.exception(e)
+			return
+		
+	def get_item(self, id: int) -> TrackerItem | None:
+		"""Alias for `Codebeamer.get_tracker_item`."""
+		return self.get_tracker_item(id)
