@@ -1,4 +1,5 @@
 from loguru import logger
+from math import ceil
 
 def loadable(func):
 	"""Decorator for calling load on property getter functions. Class must have a 
@@ -17,3 +18,9 @@ def loadable(func):
 			return func(cls)
 	
 	return _loadable
+
+def clamp(value: int, minimum: int, maximum: int) -> int:
+	return max(minimum, min(maximum, value))
+
+def pages(amount: int, size: int) -> int:
+	return ceil(amount / size)
