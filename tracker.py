@@ -8,6 +8,7 @@ from math import ceil
 from .rest_client import RestClient
 from .user import User
 from .tracker_item import TrackerItem
+from .field import Field
 from .utils import loadable
 
 if TYPE_CHECKING:
@@ -282,19 +283,42 @@ class Tracker:
 		"""Alias for get_tracker_items."""
 		return self.get_tracker_items(page=page, page_size=page_size)
 	
-	def get_fields(self):
-		"""Fetches the available field names for this tracker."""
-		# GET trackers/{self.id}/fields
+	def get_fields(self) -> list[Field]:
+		"""Fetches the available field names for this tracker.
+		
+		Returns:
+		list[`Field`] — A list of fields in this tracker."""
+		return [Field(**f, client=self._client, tracker=self) for f in self._client.get(f'trackers/{self.id}/fields')]
 
-	def get_field(self, field: str | int):
-		"""Fetches detailed information about the field for the tracker."""
-		# GET trackers/{self.id}/fields/{fieldId}
+	def get_field(self, field: str | int) -> Field | None:
+		"""Fetches detailed information about the field for the tracker.
+		
+		Params:
+		field — The name or ID of the field to fetch. — str | int
 
-	def _get_field_by_id(self, id: int):
-		...
+		Raises:
+		TypeError — A type other than str or int was provided.
+		
+		Returns:
+		`Field` — The field if it exists."""
+		if isinstance(field, int):
+			return self._get_field_by_id(field)
+		elif isinstance(field, str):
+			return self._get_field_by_name(field)
+		else:
+			raise TypeError(f'expected str or int, got {type(field)}')
 
-	def _get_field_by_name(self, name: str):
-		...
+	def _get_field_by_id(self, id: int) -> Field | None:
+		try:
+			field = Field(**self._client.get(f'trackers/{self.id}/fields/{id}'), client=self._client, tracker=self)
+			return field
+		except Exception as e:
+			logger.exception(e)
+			return
+
+	def _get_field_by_name(self, name: str) -> Field | None:
+		fields = {f.name: f for f in self.get_fields()}
+		return fields.get(name)
 
 	def __repr__(self) -> str:
 		return f'Tracker(id={self.id}, name={self.name})'

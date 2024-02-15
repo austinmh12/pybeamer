@@ -82,7 +82,6 @@ class Field:
 		return self._name
 	
 	@property
-	@loadable
 	def tracker(self) -> Tracker | None:
 		"""The tracker the field belongs to."""
 		return self._tracker
@@ -162,7 +161,7 @@ class Field:
 		if self._loaded:
 			logger.info('Field already loaded, ignoring...')
 			return
-		field_data: dict[str, Any] = self._client.get(f'trackers/{self.tracker.id}/item/{self.id}')
+		field_data: dict[str, Any] = self._client.get(f'trackers/{self.tracker.id}/fields/{self.id}')
 		self._description = field_data.get('description')
 		self._formula = field_data.get('formula')
 		self._hidden = field_data.get('hidden')
@@ -175,3 +174,15 @@ class Field:
 		self._tracker_item_field = field_data.get('trackerItemField')
 		self._value_model = field_data.get('valueModel')
 		self._loaded = True
+
+	def __repr__(self) -> str:
+		return f'Field(id={self.id}, name={self.name})'
+	
+	def __str__(self) -> str:
+		return self.name
+	
+	def __eq__(self, o: object) -> bool:
+		return isinstance(o, Field) and self.id == o.id
+	
+	def __lt__(self, o: object) -> bool:
+		return isinstance(o, Field) and self.id < o.id
