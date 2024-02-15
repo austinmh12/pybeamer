@@ -25,6 +25,7 @@ class Project:
 		_created_by: User | None
 		_modified_at: datetime | None
 		_modified_by: User | None
+		_trackers: list[Tracker]
 		_loaded: bool
 
 	def __init__(self, id: int, name: str, **kwargs):
@@ -150,9 +151,6 @@ class Project:
 		This prevents a lot of extra data that's not needed from being sent. Thus, 
 		this method exists to flush out the rest of the project information if it is 
 		needed."""
-		# TODO: Determine if load should be hidden and called when the property is missing
-		# i.e. if user calls project.key_name and it's None and self._loaded is False
-		# then call self._load()
 		if self._loaded:
 			logger.info('Project already loaded, ignoring...')
 			return
@@ -190,11 +188,12 @@ class Project:
 		
 		Returns:
 		`Tracker` — The tracker if it exists under the project."""
-		trackers = self.get_trackers()
+		if not self._trackers:
+			self._trackers = self.get_trackers()
 		if isinstance(tracker, int):
-			trackers = {t.id: t for t in trackers}
+			trackers = {t.id: t for t in self._trackers}
 		elif isinstance(tracker, str):
-			trackers = {t.name: t for t in trackers}
+			trackers = {t.name: t for t in self._trackers}
 		else:
 			raise TypeError(f'expected str or int, got {type(tracker)}')
 		return trackers.get(tracker)

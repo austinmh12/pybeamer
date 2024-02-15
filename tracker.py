@@ -3,13 +3,12 @@ from typing import TYPE_CHECKING, Any
 
 from datetime import datetime
 from loguru import logger
-from math import ceil
 
 from .rest_client import RestClient
 from .user import User
 from .tracker_item import TrackerItem
 from .fields import FieldDefinition
-from .utils import loadable
+from .utils import loadable, clamp, pages
 
 if TYPE_CHECKING:
 	from .projects import Project
@@ -266,11 +265,11 @@ class Tracker:
 		fetch_all = page == 0
 		if fetch_all:
 			page = 1
-		page_size = max(1, min(500, page_size)) # Clamp page_size between 1 and 500
+		page_size = clamp(page_size, 1, 500) # Clamp page_size between 1 and 500
 		params = {'page': page, 'pageSize': page_size}
 		items: list[TrackerItem] = []
 		item_data = self._client.get(f'trackers/{self.id}/items', params=params)
-		total_pages = ceil(item_data['total'] / page_size)
+		total_pages = pages(item_data['total'], page_size)
 		items.extend([TrackerItem(**ti, client=self._client, tracker=self) for ti in item_data['itemRefs']])
 		if fetch_all:
 			while params['page'] < total_pages:

@@ -519,6 +519,7 @@ class TrackerItem:
 		return self.tracker.get_field(field)
 	
 	def refresh(self):
+		"""Refreshes all the information on the item."""
 		self._load()
 
 	def __repr__(self) -> str:

@@ -2,13 +2,13 @@ from __future__ import annotations
 from typing import Any
 
 from loguru import logger
-from math import ceil
 
 from .rest_client import RestClient
 from .projects import Project
 from .user import User
 from .tracker import Tracker
 from .tracker_item import TrackerItem
+from .utils import clamp, pages
 
 class Codebeamer:
 	"""The Codebeamer API client"""
@@ -71,11 +71,11 @@ class Codebeamer:
 		fetch_all = page == 0
 		if fetch_all:
 			page = 1
-		page_size = max(1, min(500, page_size)) # Clamp page_size between 1 and 500
+		page_size = clamp(page_size, 1, 500) # Clamp page_size between 1 and 500
 		params = {'page': page, 'pageSize': page_size}
 		users: list[User] = []
 		user_data = self._client.get('users', params=params)
-		total_pages = ceil(user_data['total'] / page_size)
+		total_pages = pages(user_data['total'], page_size)
 		users.extend([User(**u, client=self._client) for u in user_data['users']])
 		if fetch_all:
 			while params['page'] < total_pages:
