@@ -8,7 +8,7 @@ from math import ceil
 from .rest_client import RestClient
 from .user import User
 from .tracker_item import TrackerItem
-from .field import Field
+from .fields import FieldDefinition
 from .utils import loadable
 
 if TYPE_CHECKING:
@@ -283,14 +283,14 @@ class Tracker:
 		"""Alias for get_tracker_items."""
 		return self.get_tracker_items(page=page, page_size=page_size)
 	
-	def get_fields(self) -> list[Field]:
+	def get_fields(self) -> list[FieldDefinition]:
 		"""Fetches the available field names for this tracker.
 		
 		Returns:
 		list[`Field`] — A list of fields in this tracker."""
-		return [Field(**f, client=self._client, tracker=self) for f in self._client.get(f'trackers/{self.id}/fields')]
+		return [FieldDefinition(**f, client=self._client, tracker=self) for f in self._client.get(f'trackers/{self.id}/fields')]
 
-	def get_field(self, field: str | int) -> Field | None:
+	def get_field(self, field: str | int) -> FieldDefinition | None:
 		"""Fetches detailed information about the field for the tracker.
 		
 		Params:
@@ -308,15 +308,15 @@ class Tracker:
 		else:
 			raise TypeError(f'expected str or int, got {type(field)}')
 
-	def _get_field_by_id(self, id: int) -> Field | None:
+	def _get_field_by_id(self, id: int) -> FieldDefinition | None:
 		try:
-			field = Field(**self._client.get(f'trackers/{self.id}/fields/{id}'), client=self._client, tracker=self)
+			field = FieldDefinition(**self._client.get(f'trackers/{self.id}/fields/{id}'), client=self._client, tracker=self)
 			return field
 		except Exception as e:
 			logger.exception(e)
 			return
 
-	def _get_field_by_name(self, name: str) -> Field | None:
+	def _get_field_by_name(self, name: str) -> FieldDefinition | None:
 		fields = {f.name: f for f in self.get_fields()}
 		return fields.get(name)
 

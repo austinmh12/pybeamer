@@ -6,7 +6,8 @@ from datetime import datetime
 
 from .rest_client import RestClient
 from .user import User
-from .utils import loadable
+from .fields import Field, FieldDefinition
+from .utils import loadable, clamp, pages
 
 if TYPE_CHECKING:
 	from .tracker import Tracker
@@ -51,7 +52,7 @@ class TrackerItem:
 		_type_name: str | None
 		_comments: list[dict[str, Any]] | None # TODO: Comment
 		_tags: list[dict[str, Any]] | None # TODO: Tag
-		# TODO: There are more base fields than this such as owners, platforms, etc
+		_fields: list[Field]
 		_loaded: bool
 
 	def __init__(self, id: int, name: str, *args, **kwargs):
@@ -62,6 +63,14 @@ class TrackerItem:
 		# Want to try and get this regardless of type since it can come from the Tracker class
 		tracker = kwargs.get('tracker')
 		self._tracker = Tracker(**tracker, client=self._client) if isinstance(tracker, dict) else tracker
+		# Want to try and get this regardless of type since it can come from the TrackerItem class
+		parent = kwargs.get('parent')
+		if isinstance(parent, TrackerItem):
+			self._parent = parent
+		elif isinstance(parent, dict):
+			self._parent = TrackerItem(**parent, client=self._client)
+		else:
+			self._parent = None
 		# type only appears in GET /trackers/{trackerId}/items
 		_type = kwargs.get('type')
 		if isinstance(_type, str):
@@ -84,7 +93,6 @@ class TrackerItem:
 			self._created_by = None
 			self._modified_at = None
 			self._modified_by = None
-			self._parent = None
 			self._version = None
 			self._assigned_to = None
 			self._closed_at = None
@@ -102,6 +110,7 @@ class TrackerItem:
 			self._type_name = None
 			self._comments = None
 			self._tags = None
+			self._fields = list()
 			self._loaded = False
 		else:
 			self._accrued_millis = kwargs.get('accruedMillis')
@@ -124,13 +133,6 @@ class TrackerItem:
 			self._created_by = User(**kwargs.get('createdBy'), client=self._client)
 			self._modified_at = datetime.strptime(kwargs.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
 			self._modified_by = User(**kwargs.get('modifiedBy'), client=self._client)
-			parent = kwargs.get('parent')
-			if isinstance(parent, TrackerItem):
-				self._parent = parent
-			elif isinstance(parent, dict):
-				self._parent = TrackerItem(**parent, client=self._client)
-			else:
-				self._parent = None
 			self._version = kwargs.get('version')
 			self._assigned_to = kwargs.get('assignedTo')
 			closed_at = kwargs.get('closedAt')
@@ -149,6 +151,7 @@ class TrackerItem:
 			self._type_name = kwargs.get('typeName')
 			self._comments = kwargs.get('comments')
 			self._tags = kwargs.get('tags')
+			self._fields = self.get_fields()
 			self._loaded = True
 
 	@property
@@ -441,11 +444,36 @@ class TrackerItem:
 		self._type_name = item_data.get('typeName')
 		self._comments = item_data.get('comments')
 		self._tags = item_data.get('tags')
+		self._fields = self.get_fields()
 		self._loaded = True
 
 	def get_children(self, page: int = 0, page_size: int = 25) -> list[TrackerItem]:
-		"""Fetches all the child items of the current item."""
-		# GET items/{self.id}/children
+		"""Fetches all the child items of the current item. Updates the `TrackerItem.children` field 
+		as well.
+
+		Params:
+		page — The page number to fetch if you want a specific page of items. If 0 then all items are fetched. — int(0)
+		page_size — The number of results per page. Must be between 1 and 500. — int(25)
+		
+		Returns:
+		list[`TrackerItem`] — A list of the child items to this item."""
+		fetch_all = page == 0
+		if fetch_all:
+			page = 1
+		page_size = clamp(page_size, 1, 500) # Clamp page_size between 1 and 500
+		params = {'page': page, 'pageSize': page_size}
+		items: list[TrackerItem] = []
+		item_data = self._client.get(f'items/{self.id}/children', params=params)
+		total_pages = pages(item_data['total'], page_size)
+		items.extend([TrackerItem(**ti, client=self._client, tracker=self) for ti in item_data['itemRefs']])
+		if fetch_all:
+			while params['page'] < total_pages:
+				params['page'] += 1
+				item_data = self._client.get(f'items/{self.id}/children', params=params)
+				items.extend([TrackerItem(**ti, client=self._client, tracker=self.tracker, parent=self) for ti in item_data['itemRefs']])
+		self._children.extend(items)
+		self._children = list(set(self._children))
+		return items
 
 	def update_children(self, mode: str):
 		"""Insert, replace, or remove children from the item."""
@@ -455,15 +483,43 @@ class TrackerItem:
 		"""Add an item as a child to this item."""
 		# POST items/{self.id}/children
 
-	def get_fields(self):
+	def get_fields(self) -> list[Field]:
 		"""Gets the field information for the item. This groups the fields into four 
 		categories: editable, editable table, read-only, and read-only table fields."""
 		# GET items/{self.id}/fields
-		# TODO: This should be called with _load so that custom setter functions can leverage the info
+		fields: list[Field] = []
+		field_data: dict[str, Any] = self._client.get(f'items/{self.id}/fields')
+		fields.extend([Field(**f, client=self._client, editable=True, item_id=self.id) for f in field_data['editableFields']])
+		fields.extend([Field(**f, client=self._client, editable=False, item_id=self.id) for f in field_data['readOnlyFields']])
+		return fields
+	
+	def get_field(self, field: str | int) -> Field:
+		"""Gets the field on the item."""
+		if not self._fields:
+			self._fields = self.get_fields()
+		if isinstance(field, int):
+			field_dict = {f.id: f for f in self._fields}
+		elif isinstance(field, str):
+			field_dict = {f.name: f for f in self._fields}
+		else:
+			raise TypeError
+		return field_dict.get(field)
+	
+	def update_field(self, field: str | int, value: Any):
+		"""Shortcut for calling `TrackerItem.get_field(field)` then `Field.value = value` with 
+		the added benefit of updating the item's cached fields so `TrackerItem.refresh` doesn't 
+		need to be called to see the updated value."""
+		field: Field = self.get_field(field)
+		field.value = value
+		self._fields.remove(field)
+		self._fields.append(field)
 
-	def get_field(self, field: str | int):
+	def get_field_definition(self, field: str | int) -> FieldDefinition:
 		"""Fetches a specific field from the tracker this item is in."""
 		return self.tracker.get_field(field)
+	
+	def refresh(self):
+		self._load()
 
 	def __repr__(self) -> str:
 		return f'TrackerItem(id={self.id}, name={self.name})'
@@ -476,3 +532,6 @@ class TrackerItem:
 	
 	def __lt__(self, o: object) -> bool:
 		return isinstance(o, TrackerItem) and self.id < o.id
+	
+	def __hash__(self) -> int:
+		return hash(self.id)
