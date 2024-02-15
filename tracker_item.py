@@ -385,6 +385,11 @@ class TrackerItem:
 	def story_points(self) -> int | None:
 		"""The number of story points assigned to this item."""
 		return self._story_points
+	
+	@property
+	def json(self) -> dict[str, Any]:
+		"""JSON representation of the item."""
+		# TODO
 
 	def _load(self):
 		"""Loads the rest of the items's data. When an item is fetched using 
@@ -521,6 +526,15 @@ class TrackerItem:
 	def refresh(self):
 		"""Refreshes all the information on the item."""
 		self._load()
+
+	def delete(self):
+		"""Deletes the current tracker item."""
+		self._client.delete(f'items/{self.id}')
+
+	def update(self):
+		"""Updates the current item. Best used when updating multiple fields at the same time."""
+		# TODO: This will bypass `Field.value` and access `Field._value` directly, doing it's own type checking
+		# self.json needs to be done first
 
 	def __repr__(self) -> str:
 		return f'TrackerItem(id={self.id}, name={self.name})'

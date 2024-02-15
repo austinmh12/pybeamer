@@ -10,6 +10,8 @@ from .utils import loadable, clamp, pages
 if TYPE_CHECKING:
 	from .tracker import Tracker
 
+# ? Should this be a base class and break into sub classes?
+# ? Or shoud get_options just be implemented and return [] if type != 'ChoiceField'
 class FieldDefinition:
 	"""Represents a field in a tracker in codeBeamer."""
 	if TYPE_CHECKING:

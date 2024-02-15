@@ -197,6 +197,15 @@ class Project:
 		else:
 			raise TypeError(f'expected str or int, got {type(tracker)}')
 		return trackers.get(tracker)
+	
+	def create_tracker(
+		self,
+		name: str,
+		key_name: str,
+		**kwargs
+	) -> Tracker:
+		"""Create a tracker in the current project."""
+		# TODO: Defaults for the rest of the arguments that are mandatory
 
 	def __repr__(self) -> str:
 		return f'Project(id={self.id}, name={self.name})'

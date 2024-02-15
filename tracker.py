@@ -318,6 +318,25 @@ class Tracker:
 	def _get_field_by_name(self, name: str) -> FieldDefinition | None:
 		fields = {f.name: f for f in self.get_fields()}
 		return fields.get(name)
+	
+	def get_children(self) -> list[TrackerItem]:
+		"""Get the immediate descendents of the tracker."""
+		# TODO
+
+	def create_tracker_item(
+		self,
+		name: str,
+		description: str,
+		description_format: str = 'PlainText',
+		parent_id: int = None,
+		reference_id: int = None,
+		position: str = None,
+		**kwargs,
+	) -> TrackerItem:
+		"""Creates a new tracker item in the current tracker."""
+		# ! Need to grab system fields into the top level data level.
+		# ! Need to put non-system fields in the customFields section as a list of Fields
+		# TODO
 
 	def __repr__(self) -> str:
 		return f'Tracker(id={self.id}, name={self.name})'

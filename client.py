@@ -176,3 +176,8 @@ class Codebeamer:
 	def get_item(self, id: int) -> TrackerItem | None:
 		"""Alias for `Codebeamer.get_tracker_item`."""
 		return self.get_tracker_item(id)
+	
+	def search_items(self, query: str) -> list[TrackerItem]:
+		"""Search for items using a cbQL query string."""
+		# TODO
+		# ? Use the POST method
