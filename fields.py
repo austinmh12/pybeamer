@@ -269,6 +269,8 @@ class ChoiceField(Field):
 	def __init__(self, fieldId: int, name: str, *args, **kwargs):
 		super().__init__(fieldId, name, *args, **kwargs)
 		self._value: list[ChoiceValue] = [ChoiceValue(**cv) for cv in kwargs.get('values')]
+		# Caching for the choices since they won't change on an item
+		self._choices: list[ChoiceValue] = None
 
 	@property
 	def value(self) -> str:
@@ -284,7 +286,10 @@ class ChoiceField(Field):
 		for _v in v:
 			if not isinstance(_v, ChoiceValue):
 				raise TypeError(f'expected ChoiceValue, got {type(_v)}')
-			# TODO: Check here if _v is in the list of available choices
+			# Should be cached since the user would need to get choices first
+			available_choices = self.get_choices()
+			if _v not in available_choices:
+				raise ValueError(f'{_v} is not an available choice')
 		self._value = v
 		data = {
 			'fieldValues': [
@@ -298,23 +303,40 @@ class ChoiceField(Field):
 		}
 		self._client.put(f'items/{self._item_id}/fields?quietMode=true', json_=data)
 
-	def get_choices(self, page: int = 0, page_size: int = 25) -> list[ChoiceValue]:
-		""""""
-		fetch_all = page == 0
-		if fetch_all:
+	def get_choices(self) -> list[ChoiceValue]:
+		"""Fetches all the available choices for this field on an item."""
+		# ! Decision here is to just get all of them and not allow the user filter
+		if not self._choices:
 			page = 1
-		page_size = clamp(page_size, 1, 500) # Clamp page_size between 1 and 500
-		params = {'page': page, 'pageSize': page_size}
-		choices: list[ChoiceValue] = []
-		choice_data = self._client.get(f'items/{self._item_id}/fields/{self.id}/options', params=params)
-		total_pages = pages(choice_data['total'], page_size)
-		choices.extend([ChoiceValue(**cv) for cv in choice_data['references']])
-		if fetch_all:
+			page_size = 500
+			params = {'page': page, 'pageSize': page_size}
+			choices: list[ChoiceValue] = []
+			choice_data = self._client.get(f'items/{self._item_id}/fields/{self.id}/options', params=params)
+			total_pages = pages(choice_data['total'], page_size)
+			choices.extend([ChoiceValue(**cv) for cv in choice_data['references']])
 			while params['page'] < total_pages:
 				params['page'] += 1
 				choice_data = self._client.get(f'items/{self.id}/children', params=params)
 				choices.extend([ChoiceValue(**cv) for cv in choice_data['references']])
-		return choices
+			self._choices = choices
+		return self._choices
+	
+	def get_choice(self, choice: str | int) -> ChoiceValue:
+		"""Fetches a specific choice value from the list of available choices on this field.
+		
+		Params:
+		choice — The name or ID of the choice value to fetch. — str | int
+		
+		Returns:
+		`ChoiceValue` — An available choice if one exists."""
+		choices = self.get_choices()
+		if isinstance(choice, str):
+			choice_dict = {c.name: c for c in choices}
+		elif isinstance(choice, int):
+			choice_dict = {c.id: c for c in choices}
+		else:
+			raise TypeError(f'expected str or int, got {type(choice)}')
+		return choice_dict.get(choice)
 
 class ChoiceValue:
 	def __init__(self, id: int, name: str, type: str, **kwargs):
