@@ -305,7 +305,7 @@ class ChoiceField(Field):
 
 	def get_choices(self) -> list[ChoiceValue]:
 		"""Fetches all the available choices for this field on an item."""
-		# ! Decision here is to just get all of them and not allow the user filter
+		# ! Decision here is to just get all of them and not allow the user to paginate
 		if not self._choices:
 			page = 1
 			page_size = 500
