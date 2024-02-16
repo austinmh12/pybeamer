@@ -177,7 +177,32 @@ class Codebeamer:
 		"""Alias for `Codebeamer.get_tracker_item`."""
 		return self.get_tracker_item(id)
 	
-	def search_items(self, query: str) -> list[TrackerItem]:
-		"""Search for items using a cbQL query string."""
-		# TODO
-		# ? Use the POST method
+	def search_tracker_items(self, query: str, page: int = 0, page_size: int = 25) -> list[TrackerItem]:
+		"""Search for items using a cbQL query string.
+		
+		Params:
+		query — The query string to search with. — str
+		page — The page number to fetch if you want a specific page of users. If 0 then all users are fetched. — int(0)
+		page_size — The number of results per page of users. Must be between 1 and 500. — int(25)
+		
+		Returns:
+		list[`TrackerItem`] — A list of items that match the query."""
+		fetch_all = page == 0
+		if fetch_all:
+			page = 1
+		page_size = clamp(page_size, 1, 500) # Clamp page_size between 1 and 500
+		data = {'page': page, 'pageSize': page_size, 'queryString': query}
+		items: list[TrackerItem] = []
+		item_data = self._client.post('items/query', json_=data)
+		total_pages = pages(item_data['total'], page_size)
+		items.extend([TrackerItem(**ti, client=self._client) for ti in item_data['items']])
+		if fetch_all:
+			while data['page'] < total_pages:
+				data['page'] += 1
+				item_data = self._client.post('items/query', json_=data)
+				items.extend([TrackerItem(**ti, client=self._client) for ti in item_data['items']])
+		return items
+
+	def search_items(self, query: str, page: int = 0, page_size: int = 25) -> list[TrackerItem]:
+		"""Alias for `Codebeamer.search_tracker_items`"""
+		return self.search_tracker_items(query=query, page=page, page_size=page_size)
