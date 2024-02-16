@@ -39,14 +39,14 @@ class TrackerItem:
 		_closed_at: datetime | None
 		_tracker: Tracker | None
 		_children: list[TrackerItem] | None
-		_custom_fields: list[dict[str, Any]] | None # TODO: Field(Custom)
-		_priority: dict[str, Any] | None # TODO: Field(ChoiceOption)
-		_status: dict[str, Any] | None # TODO: Field(ChoiceOption)
-		_categories: list[dict[str, Any]] | None # TODO: Field(ChoiceOption)
-		_subjects: list[dict[str, Any]] | None # TODO: Field(ChoiceOption)
-		_resolutions: list[dict[str, Any]] | None # TODO: Field(ChoiceOption)
-		_severities: list[dict[str, Any]] | None # TODO: Field(ChoiceOption)
-		_teams: list[dict[str, Any]] | None # TODO: Field(ChoiceOption)
+		_custom_fields: list[Field] | None
+		_priority: Field | None
+		_status: Field | None
+		_categories: list[Field] | None
+		_subjects: list[Field] | None
+		_resolutions: list[Field] | None
+		_severities: list[Field] | None
+		_teams: list[Field] | None
 		_versions: list[dict[str, Any]] | None # TODO: Version
 		_ordinal: int | None
 		_type_name: str | None
@@ -113,6 +113,8 @@ class TrackerItem:
 			self._fields = list()
 			self._loaded = False
 		else:
+			# Do this first for passing editable to the customfields
+			self._fields = self.get_fields()
 			self._accrued_millis = kwargs.get('accruedMillis')
 			self._areas = kwargs.get('areas')
 			self._assigned_at = kwargs.get('assignedAt')
@@ -138,20 +140,26 @@ class TrackerItem:
 			closed_at = kwargs.get('closedAt')
 			self._closed_at = datetime.strptime(closed_at, '%Y-%m-%dT%H:%M:%S.%f') if closed_at else None
 			self._children = [TrackerItem(**ti, client=self._client, parent=self) for ti in kwargs.get('children', [])]
-			self._custom_fields = kwargs.get('customFields')
-			self._priority = kwargs.get('priority')
-			self._status = kwargs.get('status')
-			self._categories = kwargs.get('categories')
-			self._subjects = kwargs.get('subjects')
-			self._resolutions = kwargs.get('resolutions')
-			self._severities = kwargs.get('severities')
-			self._teams = kwargs.get('teams')
+			
+			# Fetch the field from the cached fields on load.
+			custom_fields: list[dict[str, Any]] = kwargs.get('customFields')
+			self._custom_fields = []
+			for custom_field in custom_fields:
+				field = self.get_field(custom_field.get('id'))
+				if field:
+					self._custom_fields.append(field)
+			self._priority = Field(**kwargs.get('priority'), client=self._client, item_id=self.id)
+			self._status = Field(**kwargs.get('status'), client=self._client, item_id=self.id)
+			self._categories = [Field(**c, client=self._client, item_id=self.id) for c in kwargs.get('categories')]
+			self._subjects = [Field(**s, client=self._client, item_id=self.id) for s in kwargs.get('subjects')]
+			self._resolutions = [Field(**r, client=self._client, item_id=self.id) for r in kwargs.get('resolutions')]
+			self._severities = [Field(**s, client=self._client, item_id=self.id) for s in kwargs.get('severities')]
+			self._teams = [Field(**t, client=self._client, item_id=self.id) for t in kwargs.get('teams')]
 			self._versions = kwargs.get('versions')
 			self._ordinal = kwargs.get('ordinal')
 			self._type_name = kwargs.get('typeName')
 			self._comments = kwargs.get('comments')
 			self._tags = kwargs.get('tags')
-			self._fields = self.get_fields()
 			self._loaded = True
 
 	@property
@@ -238,49 +246,49 @@ class TrackerItem:
 
 	@property
 	@loadable
-	def custom_fields(self) -> list[dict[str, Any]] | None:
+	def custom_fields(self) -> list[Field] | None:
 		"""A list of all the custom fields on this item."""
 		return self._custom_fields
 
 	@property
 	@loadable
-	def priority(self) -> list[dict[str, Any]] | None:
+	def priority(self) -> Field | None:
 		"""The item's priority."""
 		return self._priority
 
 	@property
 	@loadable
-	def status(self) -> list[dict[str, Any]] | None:
+	def status(self) -> Field | None:
 		"""The status of the item."""
 		return self._status
 
 	@property
 	@loadable
-	def categories(self) -> list[dict[str, Any]] | None:
+	def categories(self) -> list[Field] | None:
 		"""A list of categories for this item."""
 		return self._categories
 
 	@property
 	@loadable
-	def subjects(self) -> list[dict[str, Any]] | None:
+	def subjects(self) -> list[Field] | None:
 		"""A list of subjects for this item."""
 		return self._subjects
 
 	@property
 	@loadable
-	def resolutions(self) -> list[dict[str, Any]] | None:
+	def resolutions(self) -> list[Field] | None:
 		"""A list of the resolutions for this item."""
 		return self._resolutions
 
 	@property
 	@loadable
-	def severities(self) -> list[dict[str, Any]] | None:
+	def severities(self) -> list[Field] | None:
 		"""A list of the severities for this item."""
 		return self._severities
 
 	@property
 	@loadable
-	def teams(self) -> list[dict[str, Any]] | None:
+	def teams(self) -> list[Field] | None:
 		"""A list of the teams for this item."""
 		return self._teams
 
@@ -404,6 +412,7 @@ class TrackerItem:
 		item_data: dict[str, Any] = self._client.get(f'items/{self.id}')
 		if not isinstance(self._tracker, Tracker):
 			self._tracker = Tracker(**item_data.get('tracker'), client=self._client)
+		self._fields = self.get_fields()
 		self._accrued_millis = item_data.get('accruedMillis')
 		self._areas = item_data.get('areas')
 		self._assigned_at = item_data.get('assignedAt')
@@ -436,20 +445,25 @@ class TrackerItem:
 		closed_at = item_data.get('closedAt')
 		self._closed_at = datetime.strptime(closed_at, '%Y-%m-%dT%H:%M:%S.%f') if closed_at else None
 		self._children = [TrackerItem(**ti, client=self._client, parent=self) for ti in item_data.get('children', [])]
-		self._custom_fields = item_data.get('customFields')
-		self._priority = item_data.get('priority')
-		self._status = item_data.get('status')
-		self._categories = item_data.get('categories')
-		self._subjects = item_data.get('subjects')
-		self._resolutions = item_data.get('resolutions')
-		self._severities = item_data.get('severities')
-		self._teams = item_data.get('teams')
+		# Fetch the field from the cached fields on load.
+		custom_fields: list[dict[str, Any]] = item_data.get('customFields')
+		self._custom_fields = []
+		for custom_field in custom_fields:
+			field = self.get_field(custom_field.get('id'))
+			if field:
+				self._custom_fields.append(field)
+		self._priority = Field(**item_data.get('priority'), client=self._client, item_id=self.id)
+		self._status = Field(**item_data.get('status'), client=self._client, item_id=self.id)
+		self._categories = [Field(**c, client=self._client, item_id=self.id) for c in item_data.get('categories')]
+		self._subjects = [Field(**s, client=self._client, item_id=self.id) for s in item_data.get('subjects')]
+		self._resolutions = [Field(**r, client=self._client, item_id=self.id) for r in item_data.get('resolutions')]
+		self._severities = [Field(**s, client=self._client, item_id=self.id) for s in item_data.get('severities')]
+		self._teams = [Field(**t, client=self._client, item_id=self.id) for t in item_data.get('teams')]
 		self._versions = item_data.get('versions')
 		self._ordinal = item_data.get('ordinal')
 		self._type_name = item_data.get('typeName')
 		self._comments = item_data.get('comments')
 		self._tags = item_data.get('tags')
-		self._fields = self.get_fields()
 		self._loaded = True
 
 	def get_children(self, page: int = 0, page_size: int = 25) -> list[TrackerItem]:
