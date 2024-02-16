@@ -534,7 +534,7 @@ class TrackerItem:
 	def update(self):
 		"""Updates the current item. Best used when updating multiple fields at the same time."""
 		# TODO: This will bypass `Field.value` and access `Field._value` directly, doing it's own type checking
-		# self.json needs to be done first
+		# self.json needs to be done first because you have to PUT the entire object
 
 	def __repr__(self) -> str:
 		return f'TrackerItem(id={self.id}, name={self.name})'
