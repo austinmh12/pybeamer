@@ -536,6 +536,15 @@ class TrackerItem:
 		# TODO: This will bypass `Field.value` and access `Field._value` directly, doing it's own type checking
 		# self.json needs to be done first because you have to PUT the entire object
 
+	def create_association(self, other: TrackerItem):
+		"""Creates an association with the other tracker item."""
+		# TODO
+		# ? These aren't upstream/downstream references, but the "relates to" type things
+
+	def remove_association(self, other: TrackerItem):
+		"""Removes an association with the other tracker item."""
+		# TODO
+
 	def __repr__(self) -> str:
 		return f'TrackerItem(id={self.id}, name={self.name})'
 	
