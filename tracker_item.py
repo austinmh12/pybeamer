@@ -56,6 +56,7 @@ class TrackerItem:
 		_loaded: bool
 
 	def __init__(self, id: int, name: str, *args, **kwargs):
+		# TODO: Refactor everything after client into _load()
 		from .tracker import Tracker
 		self._id: int = id
 		self._name: str = name
@@ -73,94 +74,15 @@ class TrackerItem:
 			self._parent = None
 		# type only appears in GET /trackers/{trackerId}/items
 		_type = kwargs.get('type')
-		if isinstance(_type, str):
-			# if type is present then no other information is present
-			self._accrued_millis = None
-			self._areas = None
-			self._assigned_at = None
-			self._end_date = None
-			self._estimated_millis = None
-			self._formality = None
-			self._owners = None
-			self._platforms = None
-			self._release_method = None
-			self._spent_millis = None
-			self._start_date = None
-			self._story_points = None
-			self._description = None
-			self._description_format = None
-			self._created_at = None
-			self._created_by = None
-			self._modified_at = None
-			self._modified_by = None
-			self._version = None
-			self._assigned_to = None
-			self._closed_at = None
-			self._children = None
-			self._custom_fields = None
-			self._priority = None
-			self._status = None
-			self._categories = None
-			self._subjects = None
-			self._resolutions = None
-			self._severities = None
-			self._teams = None
-			self._versions = None
-			self._ordinal = None
-			self._type_name = None
-			self._comments = None
-			self._tags = None
-			self._fields = list()
-			self._loaded = False
+		if not isinstance(_type, str):
+			self._load(kwargs)
 		else:
-			# Do this first for passing editable to the customfields
-			self._fields = self.get_fields()
-			self._accrued_millis = kwargs.get('accruedMillis')
-			self._areas = kwargs.get('areas')
-			self._assigned_at = kwargs.get('assignedAt')
-			end_date = kwargs.get('endDate')
-			self._end_date = datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%S.%f') if end_date else None
-			self._estimated_millis = kwargs.get('estimatedMillis')
-			self._formality = kwargs.get('formality')
-			self._owners = kwargs.get('owners')
-			self._platforms = kwargs.get('platforms')
-			self._release_method = kwargs.get('releaseMethod')
-			self._spent_millis = kwargs.get('spentMillis')
-			start_date = kwargs.get('startDate')
-			self._start_date = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S.%f') if start_date else None
-			self._story_points = kwargs.get('storyPoints')
-			self._description = kwargs.get('description')
-			self._description_format = kwargs.get('descriptionFormat')
-			self._created_at = datetime.strptime(kwargs.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
-			self._created_by = User(**kwargs.get('createdBy'), client=self._client)
-			self._modified_at = datetime.strptime(kwargs.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
-			self._modified_by = User(**kwargs.get('modifiedBy'), client=self._client)
-			self._version = kwargs.get('version')
-			self._assigned_to = kwargs.get('assignedTo')
-			closed_at = kwargs.get('closedAt')
-			self._closed_at = datetime.strptime(closed_at, '%Y-%m-%dT%H:%M:%S.%f') if closed_at else None
-			self._children = [TrackerItem(**ti, client=self._client, parent=self) for ti in kwargs.get('children', [])]
-			
-			# Fetch the field from the cached fields on load.
-			custom_fields: list[dict[str, Any]] = kwargs.get('customFields')
-			self._custom_fields = []
-			for custom_field in custom_fields:
-				field = self.get_field(custom_field.get('id'))
-				if field:
-					self._custom_fields.append(field)
-			self._priority = Field(**kwargs.get('priority'), client=self._client, item_id=self.id)
-			self._status = Field(**kwargs.get('status'), client=self._client, item_id=self.id)
-			self._categories = [Field(**c, client=self._client, item_id=self.id) for c in kwargs.get('categories')]
-			self._subjects = [Field(**s, client=self._client, item_id=self.id) for s in kwargs.get('subjects')]
-			self._resolutions = [Field(**r, client=self._client, item_id=self.id) for r in kwargs.get('resolutions')]
-			self._severities = [Field(**s, client=self._client, item_id=self.id) for s in kwargs.get('severities')]
-			self._teams = [Field(**t, client=self._client, item_id=self.id) for t in kwargs.get('teams')]
-			self._versions = kwargs.get('versions')
-			self._ordinal = kwargs.get('ordinal')
-			self._type_name = kwargs.get('typeName')
-			self._comments = kwargs.get('comments')
-			self._tags = kwargs.get('tags')
-			self._loaded = True
+			# if type is a str then it's a TrackerItemReference aka none of this is present
+			prop_defaults = {k: None for k in self.__class__.__annotations__}
+			self.__dict__.update(prop_defaults)
+			# Want these to have standard values
+			self._fields = list() 
+			self._loaded = False
 
 	@property
 	def id(self) -> int:
@@ -399,7 +321,7 @@ class TrackerItem:
 		"""JSON representation of the item."""
 		# TODO
 
-	def _load(self):
+	def _load(self, data: dict[str, Any] = None):
 		"""Loads the rest of the items's data. When an item is fetched using 
 		`Tracker.get_items` only the ID and Name of the item are retrieved. 
 		This prevents a lot of extra data that's not needed from being sent. Thus, 
@@ -408,62 +330,85 @@ class TrackerItem:
 		if self._loaded:
 			logger.info('Item already loaded, ignoring...')
 			return
+		if not data:
+			data: dict[str, Any] = self._client.get(f'items/{self.id}')
 		from .tracker import Tracker
-		item_data: dict[str, Any] = self._client.get(f'items/{self.id}')
 		if not isinstance(self._tracker, Tracker):
-			self._tracker = Tracker(**item_data.get('tracker'), client=self._client)
+			self._tracker = Tracker(**data.get('tracker'), client=self._client)
+		
+		# Cache field data first
 		self._fields = self.get_fields()
-		self._accrued_millis = item_data.get('accruedMillis')
-		self._areas = item_data.get('areas')
-		self._assigned_at = item_data.get('assignedAt')
-		end_date = item_data.get('endDate')
+		
+		# Rest of the system fields
+		self._accrued_millis = data.get('accruedMillis')
+		self._areas = data.get('areas')
+		assigned_at = data.get('assignedAt')
+		self._assigned_at = datetime.strptime(assigned_at, '%Y-%m-%dT%H:%M:%S.%f') if assigned_at else None
+		end_date = data.get('endDate')
 		self._end_date = datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%S.%f') if end_date else None
-		self._estimated_millis = item_data.get('estimatedMillis')
-		self._formality = item_data.get('formality')
-		self._owners = item_data.get('owners')
-		self._platforms = item_data.get('platforms')
-		self._release_method = item_data.get('releaseMethod')
-		self._spent_millis = item_data.get('spentMillis')
-		start_date = item_data.get('startDate')
+		self._estimated_millis = data.get('estimatedMillis')
+		self._formality = data.get('formality')
+		self._owners = data.get('owners')
+		self._platforms = data.get('platforms')
+		self._release_method = data.get('releaseMethod')
+		self._spent_millis = data.get('spentMillis')
+		start_date = data.get('startDate')
 		self._start_date = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S.%f') if start_date else None
-		self._story_points = item_data.get('storyPoints')
-		self._description = item_data.get('description')
-		self._description_format = item_data.get('descriptionFormat')
-		self._created_at = datetime.strptime(item_data.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
-		self._created_by = User(**item_data.get('createdBy'), client=self._client)
-		self._modified_at = datetime.strptime(item_data.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
-		self._modified_by = User(**item_data.get('modifiedBy'), client=self._client)
-		parent = item_data.get('parent')
+		self._story_points = data.get('storyPoints')
+		self._description = data.get('description')
+		self._description_format = data.get('descriptionFormat')
+		self._created_at = datetime.strptime(data.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
+		self._created_by = User(**data.get('createdBy'), client=self._client)
+		self._modified_at = datetime.strptime(data.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
+		self._modified_by = User(**data.get('modifiedBy'), client=self._client)
+
+		# Want to link parents together
+		parent = data.get('parent')
 		if isinstance(parent, TrackerItem):
 			self._parent = parent
 		elif isinstance(parent, dict):
-			self._parent = TrackerItem(**parent, client=self._client)
+			self._parent = TrackerItem(**parent, client=self._client, tracker=self._tracker)
 		else:
 			self._parent = None
-		self._version = item_data.get('version')
-		self._assigned_to = item_data.get('assignedTo')
-		closed_at = item_data.get('closedAt')
+		
+		self._version = data.get('version')
+		self._assigned_to = data.get('assignedTo')
+		closed_at = data.get('closedAt')
 		self._closed_at = datetime.strptime(closed_at, '%Y-%m-%dT%H:%M:%S.%f') if closed_at else None
-		self._children = [TrackerItem(**ti, client=self._client, parent=self) for ti in item_data.get('children', [])]
+		self._children = [TrackerItem(**ti, client=self._client, parent=self, tracker=self._tracker) for ti in data.get('children', [])]
+		
 		# Fetch the field from the cached fields on load.
-		custom_fields: list[dict[str, Any]] = item_data.get('customFields')
+		custom_fields: list[dict[str, Any]] = data.get('customFields')
 		self._custom_fields = []
 		for custom_field in custom_fields:
 			field = self.get_field(custom_field.get('id'))
 			if field:
 				self._custom_fields.append(field)
-		self._priority = Field(**item_data.get('priority'), client=self._client, item_id=self.id)
-		self._status = Field(**item_data.get('status'), client=self._client, item_id=self.id)
-		self._categories = [Field(**c, client=self._client, item_id=self.id) for c in item_data.get('categories')]
-		self._subjects = [Field(**s, client=self._client, item_id=self.id) for s in item_data.get('subjects')]
-		self._resolutions = [Field(**r, client=self._client, item_id=self.id) for r in item_data.get('resolutions')]
-		self._severities = [Field(**s, client=self._client, item_id=self.id) for s in item_data.get('severities')]
-		self._teams = [Field(**t, client=self._client, item_id=self.id) for t in item_data.get('teams')]
-		self._versions = item_data.get('versions')
-		self._ordinal = item_data.get('ordinal')
-		self._type_name = item_data.get('typeName')
-		self._comments = item_data.get('comments')
-		self._tags = item_data.get('tags')
+		
+		# These are all fields that exist in the _fields prop but no editable information is provided
+		# Fetch them from the _fields property to get that info
+		self._priority = Field(**data.get('priority'), client=self._client, item_id=self.id)
+		priority_ref = self._fields[self._fields.index(self._priority)]
+		if priority_ref:
+			self._priority._editable = priority_ref._editable
+		self._status = Field(**data.get('status'), client=self._client, item_id=self.id)
+		status_ref = self._fields[self._fields.index(self._status)]
+		if status_ref:
+			self._status._editable = status_ref._editable
+
+		# ! These list[Field] props are actually not lists, but ChoiceFields
+		# TODO above
+		self._categories = [Field(**c, client=self._client, item_id=self.id) for c in data.get('categories')]
+		self._subjects = [Field(**s, client=self._client, item_id=self.id) for s in data.get('subjects')]
+		self._resolutions = [Field(**r, client=self._client, item_id=self.id) for r in data.get('resolutions')]
+		self._severities = [Field(**s, client=self._client, item_id=self.id) for s in data.get('severities')]
+		self._teams = [Field(**t, client=self._client, item_id=self.id) for t in data.get('teams')]
+		
+		self._versions = data.get('versions')
+		self._ordinal = data.get('ordinal')
+		self._type_name = data.get('typeName')
+		self._comments = data.get('comments')
+		self._tags = data.get('tags')
 		self._loaded = True
 
 	def get_children(self, page: int = 0, page_size: int = 25) -> list[TrackerItem]:
