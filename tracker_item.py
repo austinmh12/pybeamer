@@ -55,8 +55,7 @@ class TrackerItem:
 		_fields: list[Field]
 		_loaded: bool
 
-	def __init__(self, id: int, name: str, *args, **kwargs):
-		# TODO: Refactor everything after client into _load()
+	def __init__(self, id: int, name: str, **kwargs):
 		# Initial setup of the object
 		prop_defaults = {k: None for k in self.__class__.__annotations__}
 		self.__dict__.update(prop_defaults)
