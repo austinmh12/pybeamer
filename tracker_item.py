@@ -397,8 +397,6 @@ class TrackerItem:
 		if status_ref:
 			self._status._editable = status_ref._editable
 
-		# ! These list[Field] props are actually not lists, but ChoiceFields
-		# TODO above
 		self._categories = [Field(**c, client=self._client, item_id=self.id) for c in data.get('categories')]
 		self._subjects = [Field(**s, client=self._client, item_id=self.id) for s in data.get('subjects')]
 		self._resolutions = [Field(**r, client=self._client, item_id=self.id) for r in data.get('resolutions')]
