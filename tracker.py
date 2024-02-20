@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, get_args
 
 from datetime import datetime
 from loguru import logger
@@ -7,8 +7,8 @@ from loguru import logger
 from .rest_client import RestClient
 from .user import User
 from .tracker_item import TrackerItem
-from .fields import FieldDefinition
-from .utils import loadable, clamp, pages
+from .fields import FieldDefinition, Field
+from .utils import loadable, clamp, pages, snake_to_camel
 
 if TYPE_CHECKING:
 	from .projects import Project
@@ -43,7 +43,7 @@ class Tracker:
 		prop_defaults = {k: None for k in self.__class__.__annotations__}
 		self.__dict__.update(prop_defaults)
 		self._loaded = False
-		
+
 		self._id: int = id
 		self._name: str = name
 		self._client: RestClient = kwargs.get('client')
@@ -304,8 +304,61 @@ class Tracker:
 	) -> TrackerItem:
 		"""Creates a new tracker item in the current tracker."""
 		# ! Need to grab system fields into the top level data level.
+		# TODO: Make the second variable of this the API name
+		system_fields = {k[1:]: v for k, v in TrackerItem.__annotations__.items()} # remove the _ leading the param
 		# ! Need to put non-system fields in the customFields section as a list of Fields
-		# TODO
+		# Bare minimum required to create the item
+		data = {
+			'name': name,
+			'description': description,
+			'descriptionFormat': description_format
+		}
+		for field, value in kwargs.items():
+			if field in system_fields:
+				# Needs to go in the top level data
+				field_arg_types = get_args(system_fields[field])
+				if any([
+					str in field_arg_types,
+					int in field_arg_types,
+					datetime in field_arg_types
+				]):
+					# Need to convert the system field name from snake_case to camelCase for the JSON
+					data[snake_to_camel(field)] = value
+				elif Field in field_arg_types:
+					# Need to get the type of field from the FieldDefinition using the provided name
+					# Build the field json and add it
+					field_json = {}
+					data[snake_to_camel(field)] = field_json
+				elif list[Field] in field_arg_types:
+					# Need to get the type of field from the FieldDefinition using the provided name
+					# Build the field json and add it
+					field_jsons = []
+					for val in value:
+						field_json = {}
+						field_jsons.append(field_json)
+					data[snake_to_camel(field)] = field_json
+				else:
+					# At the moment this is dict[str, Any] but those will be other types
+					# ! Not Implemented ATM
+					pass
+			else:
+				# Needs to go in customFields
+				if 'customFields' not in data:
+					data['customFields'] = []
+				# Need field ID, field Name, and field Type
+				field_json = {
+					'fieldId': 0,
+					'name': snake_to_camel(field), # ! NO, it will have to be snake_case to Title Case
+					'value': value,
+					'type': '*FieldValue' # * would be Choice, Bool, Integer, Text, etc.
+				}
+				data['customFields'].append(field_json)
+		try:
+			item = self._client.post(f'trackers/{self.id}/items', json_=data)
+			return TrackerItem(**item, client=self._client, tracker=self)
+		except Exception as e:
+			logger.exception(e)
+			raise e
 
 	def __repr__(self) -> str:
 		return f'Tracker(id={self.id}, name={self.name})'
