@@ -1,5 +1,6 @@
 from loguru import logger
 from math import ceil
+from string import ascii_uppercase, ascii_lowercase
 
 def loadable(func):
 	"""Decorator for calling load on property getter functions. Class must have a 
@@ -24,3 +25,9 @@ def clamp(value: int, minimum: int, maximum: int) -> int:
 
 def pages(amount: int, size: int) -> int:
 	return ceil(amount / size)
+
+def snake_to_camel(value: str) -> str:
+	"""Converts snake_case to camelCase."""
+	translation_dict = {f'_{l}': u for u, l in zip(ascii_uppercase, ascii_lowercase)}
+	translation = str.maketrans(translation_dict)
+	return value.translate(translation)
