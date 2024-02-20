@@ -33,35 +33,14 @@ class Project:
 		self._name: str = name
 		self._client: RestClient = kwargs.get('client')
 		# type only appears in GET /projects
-		if kwargs.get('type'):
+		if not kwargs.get('type'):
 			# if type is present then no other information is present
-			self._description = None
-			self._description_format = None
-			self._version = None
-			self._key_name = None
-			self._category = None
-			self._closed = None
-			self._deleted = None
-			self._template = None
-			self._created_at = None
-			self._created_by = None
-			self._modified_at = None
-			self._modified_by = None
-			self._loaded = False
+			self._load(kwargs)
 		else:
-			self._description = kwargs.get('description')
-			self._description_format = kwargs.get('descriptionFormat')
-			self._version = kwargs.get('version')
-			self._key_name = kwargs.get('keyName')
-			self._category = kwargs.get('category')
-			self._closed = kwargs.get('closed')
-			self._deleted = kwargs.get('deleted')
-			self._template = kwargs.get('template')
-			self._created_at = datetime.strptime(kwargs.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
-			self._created_by = User(**kwargs.get('createdBy'), client=self._client)
-			self._modified_at = datetime.strptime(kwargs.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
-			self._modified_by = User(**kwargs.get('modifiedBy'), client=self._client)
-			self._loaded = True
+			prop_defaults = {k: None for k in self.__class__.__annotations__}
+			self.__dict__.update(prop_defaults)
+			self._trackers = list()
+			self._loaded = False
 
 	@property
 	def id(self) -> int:
@@ -145,7 +124,7 @@ class Project:
 		"""The user that last modified the project."""
 		return self._modified_by
 
-	def _load(self):
+	def _load(self, data: dict[str, Any] = None):
 		"""Loads the rest of the project's data. When a project is fetched using 
 		`Codebeamer.get_projects` only the ID and Name of the project are retrieved. 
 		This prevents a lot of extra data that's not needed from being sent. Thus, 
@@ -154,20 +133,22 @@ class Project:
 		if self._loaded:
 			logger.info('Project already loaded, ignoring...')
 			return
-		project_data: dict[str, Any] = self._client.get(f'projects/{self.id}')
-		logger.debug(project_data)
-		self._description = project_data.get('description')
-		self._description_format = project_data.get('descriptionFormat')
-		self._version = project_data.get('version')
-		self._key_name = project_data.get('keyName')
-		self._category = project_data.get('category')
-		self._closed = project_data.get('closed')
-		self._deleted = project_data.get('deleted')
-		self._template = project_data.get('template')
-		self._created_at = datetime.strptime(project_data.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
-		self._created_by = User(**project_data.get('createdBy'), client=self._client)
-		self._modified_at = datetime.strptime(project_data.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
-		self._modified_by = User(**project_data.get('modifiedBy'), client=self._client)
+		if not data:
+			data: dict[str, Any] = self._client.get(f'projects/{self.id}')
+		logger.debug(data)
+		self._description = data.get('description')
+		self._description_format = data.get('descriptionFormat')
+		self._version = data.get('version')
+		self._key_name = data.get('keyName')
+		self._category = data.get('category')
+		self._closed = data.get('closed')
+		self._deleted = data.get('deleted')
+		self._template = data.get('template')
+		self._created_at = datetime.strptime(data.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
+		self._created_by = User(**data.get('createdBy'), client=self._client)
+		self._modified_at = datetime.strptime(data.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
+		self._modified_by = User(**data.get('modifiedBy'), client=self._client)
+		self._trackers = list()
 		self._loaded = True
 
 	def get_trackers(self) -> list[Tracker]:
