@@ -39,15 +39,17 @@ class Tracker:
 		_loaded: bool
 
 	def __init__(self, id: int, name: str, **kwargs):
+		# Initial setup of the object
+		prop_defaults = {k: None for k in self.__class__.__annotations__}
+		self.__dict__.update(prop_defaults)
+		self._loaded = False
+		
 		self._id: int = id
 		self._name: str = name
 		self._client: RestClient = kwargs.get('client')
 		# Want to try and get this regardless of type since it can come from the Project class
 		self._project = kwargs.get('project')
 		# type only appears in GET /projects/{projectId}/trackers
-		prop_defaults = {k: None for k in self.__class__.__annotations__}
-		self.__dict__.update(prop_defaults)
-		self._loaded = False
 		_type = kwargs.get('type')
 		if not isinstance(_type, str):
 			# if type is a str then no other information is present

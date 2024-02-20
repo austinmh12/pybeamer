@@ -57,13 +57,18 @@ class TrackerItem:
 
 	def __init__(self, id: int, name: str, *args, **kwargs):
 		# TODO: Refactor everything after client into _load()
-		from .tracker import Tracker
+		# Initial setup of the object
+		prop_defaults = {k: None for k in self.__class__.__annotations__}
+		self.__dict__.update(prop_defaults)
+		# Want these to have standard values
+		self._fields = list() 
+		self._loaded = False
+
 		self._id: int = id
 		self._name: str = name
 		self._client: RestClient = kwargs.get('client')
 		# Want to try and get this regardless of type since it can come from the Tracker class
-		tracker = kwargs.get('tracker')
-		self._tracker = Tracker(**tracker, client=self._client) if isinstance(tracker, dict) else tracker
+		self._tracker = kwargs.get('tracker')
 		# Want to try and get this regardless of type since it can come from the TrackerItem class
 		parent = kwargs.get('parent')
 		if isinstance(parent, TrackerItem):
@@ -76,13 +81,6 @@ class TrackerItem:
 		_type = kwargs.get('type')
 		if not isinstance(_type, str):
 			self._load(kwargs)
-		else:
-			# if type is a str then it's a TrackerItemReference aka none of this is present
-			prop_defaults = {k: None for k in self.__class__.__annotations__}
-			self.__dict__.update(prop_defaults)
-			# Want these to have standard values
-			self._fields = list() 
-			self._loaded = False
 
 	@property
 	def id(self) -> int:
@@ -98,6 +96,9 @@ class TrackerItem:
 	@loadable
 	def tracker(self) -> Tracker:
 		"""The tracker the item belongs to."""
+		from .tracker import Tracker
+		if self._tracker is not None and not isinstance(self._tracker, Tracker):
+			self._tracker = Tracker(**self._tracker, client=self._client)
 		return self._tracker
 
 	@property
