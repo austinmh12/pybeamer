@@ -147,7 +147,8 @@ class Codebeamer:
 		try:
 			tracker = Tracker(**self._client.get(f'trackers/{id}'), client=self._client)
 			return tracker
-		except:
+		except Exception as e:
+			logger.exception(e)
 			return
 	
 	def _get_tracker_by_name(self, name: str) -> Tracker | None:
