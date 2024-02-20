@@ -46,49 +46,13 @@ class Tracker:
 		self._project = kwargs.get('project')
 		# type only appears in GET /projects/{projectId}/trackers
 		_type = kwargs.get('type')
-		if isinstance(_type, str):
-			# if type is present then no other information is present
-			self._description = None
-			self._description_format = None
-			self._key_name = None
-			self._version = None
-			self._created_at = None
-			self._created_by = None
-			self._modified_at = None
-			self._modified_by = None
-			self._type = None
-			self._deleted = None
-			self._hidden = None
-			self._color = None
-			self._using_workflow = None
-			self._only_workflow_can_create_new_referring_item = None
-			self._using_quick_transitions = None
-			self._default_show_ancestor_items = None
-			self._default_show_descendant_items = None
-			self._available_as_template = None
-			self._shared_in_working_set = None
-			self._loaded = False
+		if not isinstance(_type, str):
+			# if type is a str then no other information is present
+			self._load(kwargs)
 		else:
-			self._description = kwargs.get('description')
-			self._description_format = kwargs.get('descriptionFormat')
-			self._key_name = kwargs.get('keyName')
-			self._version = kwargs.get('version')
-			self._created_at = datetime.strptime(kwargs.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
-			self._created_by = User(**kwargs.get('createdBy'), client=self._client)
-			self._modified_at = datetime.strptime(kwargs.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
-			self._modified_by = User(**kwargs.get('modifiedBy'), client=self._client)
-			self._type = kwargs.get('type')
-			self._deleted = kwargs.get('deleted')
-			self._hidden = kwargs.get('hidden')
-			self._color = kwargs.get('color')
-			self._using_workflow = kwargs.get('usingWorkflow')
-			self._only_workflow_can_create_new_referring_item = kwargs.get('onlyWorkflowCanCreateNewReferringItem')
-			self._using_quick_transitions = kwargs.get('usingQuickTransitions')
-			self._default_show_ancestor_items = kwargs.get('defaultShowAncestorItems')
-			self._default_show_descendant_items = kwargs.get('defaultShowDescendantItems')
-			self._available_as_template = kwargs.get('availableAsTemplate')
-			self._shared_in_working_set = kwargs.get('sharedInWorkingSet')
-			self._loaded = True
+			prop_defaults = {k: None for k in self.__class__.__annotations__}
+			self.__dict__.update(prop_defaults)
+			self._loaded = False
 
 	@property
 	def id(self) -> int:
@@ -220,7 +184,7 @@ class Tracker:
 		"""Flag for whether this tracker is sharable in a working set."""
 		return self._shared_in_working_set
 
-	def _load(self):
+	def _load(self, data: dict[str, Any] = None):
 		"""Loads the rest of the tracker's data. When a tracker is fetched using 
 		`Project.get_trackers` only the ID and Name of the tracker are retrieved. 
 		This prevents a lot of extra data that's not needed from being sent. Thus, 
@@ -229,28 +193,29 @@ class Tracker:
 		if self._loaded:
 			logger.info('Tracker already loaded, ignoring...')
 			return
-		tracker_data: dict[str, Any] = self._client.get(f'trackers/{self.id}')
+		if not data:
+			data: dict[str, Any] = self._client.get(f'trackers/{self.id}')
 		if not isinstance(self._project, Project):
-			self._project = Project(**tracker_data.get('project'), client=self._client)
-		self._description = tracker_data.get('description')
-		self._description_format = tracker_data.get('descriptionFormat')
-		self._key_name = tracker_data.get('keyName')
-		self._version = tracker_data.get('version')
-		self._created_at = datetime.strptime(tracker_data.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
-		self._created_by = User(**tracker_data.get('createdBy'), client=self._client)
-		self._modified_at = datetime.strptime(tracker_data.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
-		self._modified_by = User(**tracker_data.get('modifiedBy'), client=self._client)
-		self._type = tracker_data.get('type')
-		self._deleted = tracker_data.get('deleted')
-		self._hidden = tracker_data.get('hidden')
-		self._color = tracker_data.get('color')
-		self._using_workflow = tracker_data.get('usingWorkflow')
-		self._only_workflow_can_create_new_referring_item = tracker_data.get('onlyWorkflowCanCreateNewReferringItem')
-		self._using_quick_transitions = tracker_data.get('usingQuickTransitions')
-		self._default_show_ancestor_items = tracker_data.get('defaultShowAncestorItems')
-		self._default_show_descendant_items = tracker_data.get('defaultShowDescendantItems')
-		self._available_as_template = tracker_data.get('availableAsTemplate')
-		self._shared_in_working_set = tracker_data.get('sharedInWorkingSet')
+			self._project = Project(**data.get('project'), client=self._client)
+		self._description = data.get('description')
+		self._description_format = data.get('descriptionFormat')
+		self._key_name = data.get('keyName')
+		self._version = data.get('version')
+		self._created_at = datetime.strptime(data.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
+		self._created_by = User(**data.get('createdBy'), client=self._client)
+		self._modified_at = datetime.strptime(data.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
+		self._modified_by = User(**data.get('modifiedBy'), client=self._client)
+		self._type = data.get('type')
+		self._deleted = data.get('deleted')
+		self._hidden = data.get('hidden')
+		self._color = data.get('color')
+		self._using_workflow = data.get('usingWorkflow')
+		self._only_workflow_can_create_new_referring_item = data.get('onlyWorkflowCanCreateNewReferringItem')
+		self._using_quick_transitions = data.get('usingQuickTransitions')
+		self._default_show_ancestor_items = data.get('defaultShowAncestorItems')
+		self._default_show_descendant_items = data.get('defaultShowDescendantItems')
+		self._available_as_template = data.get('availableAsTemplate')
+		self._shared_in_working_set = data.get('sharedInWorkingSet')
 		self._loaded = True
 
 	def get_tracker_items(self, page: int = 0, page_size: int = 25) -> list[TrackerItem]:
