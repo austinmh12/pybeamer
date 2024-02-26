@@ -8,7 +8,7 @@ from .rest_client import RestClient
 from .user import User
 from .tracker_item import TrackerItem
 from .fields import FieldDefinition, Field
-from .utils import loadable, clamp, pages, snake_to_camel
+from .utils import loadable, clamp, pages, snake_to_camel, snake_to_title
 
 if TYPE_CHECKING:
 	from .projects import Project
@@ -311,8 +311,7 @@ class Tracker:
 		if position and position.upper() in ['BEFORE', 'AFTER', 'BELOW']:
 			params['position'] = position.upper()
 		# ! Need to grab system fields into the top level data level.
-		# TODO: Make the second variable of this the API name
-		system_fields = {k[1:]: v for k, v in TrackerItem.__annotations__.items()} # remove the _ leading the param
+		system_fields = {k[1:]: v for k, v in TrackerItem.__annotations__.items()} # remove the _ leading the param with k[1:]
 		# ! Need to put non-system fields in the customFields section as a list of Fields
 		# Bare minimum required to create the item
 		data = {
@@ -334,14 +333,33 @@ class Tracker:
 				elif Field in field_arg_types:
 					# Need to get the type of field from the FieldDefinition using the provided name
 					# Build the field json and add it
-					field_json = {}
+					# ! This is for fields like status or priority that are explicit fields
+					# ! that take the id and name of the choice
+					field_def = self.get_field(snake_to_title(field))
+					choice = field_def.get_choice(value)
+					if not choice:
+						continue
+					field_json = {
+						'id': choice.id,
+						'name': choice.name,
+						'type': choice.type
+					}
 					data[snake_to_camel(field)] = field_json
 				elif list[Field] in field_arg_types:
 					# Need to get the type of field from the FieldDefinition using the provided name
 					# Build the field json and add it
+					# ! This is for fields like subjects that take a list of id and name dictionaries
 					field_jsons = []
+					field_def = self.get_field(snake_to_title(field))
 					for val in value:
-						field_json = {}
+						choice = field_def.get_choice(val)
+						if not choice:
+							continue
+						field_json = {
+							'id': choice.id,
+							'name': choice.name,
+							'type': choice.type
+						}
 						field_jsons.append(field_json)
 					data[snake_to_camel(field)] = field_json
 				else:
@@ -349,23 +367,26 @@ class Tracker:
 					# ! Not Implemented ATM
 					pass
 			else:
+				# TODO: Support for list fields
 				# Needs to go in customFields
 				if 'customFields' not in data:
 					data['customFields'] = []
 				# Need field ID, field Name, and field Type
+				field_def = self.get_field(snake_to_title(field))
 				field_json = {
-					'fieldId': 0,
-					'name': snake_to_camel(field), # ! NO, it will have to be snake_case to Title Case
+					'fieldId': field_def.id,
+					'name': field_def.name,
 					'value': value,
-					'type': '*FieldValue' # * would be Choice, Bool, Integer, Text, etc.
+					'type': field_def._type
 				}
 				data['customFields'].append(field_json)
-		try:
-			item = self._client.post(f'trackers/{self.id}/items', json_=data, params=params)
-			return TrackerItem(**item, client=self._client, tracker=self)
-		except Exception as e:
-			logger.exception(e)
-			raise e
+		return data
+		# try:
+		# 	item = self._client.post(f'trackers/{self.id}/items', json_=data, params=params)
+		# 	return TrackerItem(**item, client=self._client, tracker=self)
+		# except Exception as e:
+		# 	logger.exception(e)
+		# 	raise e
 
 	def __repr__(self) -> str:
 		return f'Tracker(id={self.id}, name={self.name})'
