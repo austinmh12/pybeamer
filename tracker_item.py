@@ -502,6 +502,25 @@ class TrackerItem:
 		"""Removes an association with the other tracker item."""
 		# TODO
 
+	def create_child_tracker_item(
+		self,
+		name: str,
+		description: str,
+		description_format: str = 'PlainText',
+		reference_id: int = None,
+		position: str = 'AFTER',
+		**kwargs
+	) -> TrackerItem:
+		return self.tracker.create_tracker_item(
+			name=name,
+			description=description,
+			description_format=description_format,
+			parent_id=self.id,
+			reference_id=reference_id,
+			position=position,
+			**kwargs
+		)
+
 	def __repr__(self) -> str:
 		return f'TrackerItem(id={self.id}, name={self.name})'
 	
