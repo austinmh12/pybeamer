@@ -31,3 +31,7 @@ def snake_to_camel(value: str) -> str:
 	translation_dict = {f'_{l}': u for u, l in zip(ascii_uppercase, ascii_lowercase)}
 	translation = str.maketrans(translation_dict)
 	return value.translate(translation)
+
+def snake_to_title(value: str) -> str:
+	"""Converts snake_case to Title Case."""
+	return ' '.join([w.capitalize() for w in value.split('_')])
