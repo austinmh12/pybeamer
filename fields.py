@@ -23,14 +23,22 @@ class FieldDefinition:
 		_legacy_rest_name: str | None
 		_mandatory_if_dependency_formula: str | None
 		_mandatory_in_statuses: list[dict[str, Any]] | None # TODO: Status
+		_multiple_values: bool | None
+		_options: list[ChoiceValue] | None
 		_shared_fields: list[FieldDefinition] | None
 		_title: str | None
 		_tracker_item_field: str | None
 		_value_model: str | None
+		_reference_type: str | None
 		_type: str
 		_loaded: bool
 
 	def __init__(self, id: int, name: str, *args, **kwargs):
+		# Initial setup of the object
+		prop_defaults = {k: None for k in self.__class__.__annotations__}
+		self.__dict__.update(prop_defaults)
+		self._loaded = False
+
 		self._id: int = id
 		self._name: str = name
 		self._client: RestClient = kwargs.get('client')
@@ -47,32 +55,8 @@ class FieldDefinition:
 				self._tracker = None
 		# type is always present but is FieldReference when lazy loaded
 		self._type = kwargs.get('type')
-		if self._type == 'FieldReference':
-			self._description = None
-			self._formula = None
-			self._hidden = None
-			self._hide_if_dependency_formula = None
-			self._legacy_rest_name = None
-			self._mandatory_if_dependency_formula = None
-			self._mandatory_in_statuses = None
-			self._shared_fields = None
-			self._title = None
-			self._tracker_item_field = None
-			self._value_model = None
-			self._loaded = False
-		else:
-			self._description = kwargs.get('description')
-			self._formula = kwargs.get('formula')
-			self._hidden = kwargs.get('hidden')
-			self._hide_if_dependency_formula = kwargs.get('hideIfDependencyFormula')
-			self._legacy_rest_name = kwargs.get('legacyRestName')
-			self._mandatory_if_dependency_formula = kwargs.get('mandatoryIfDependencyFormula')
-			self._mandatory_in_statuses = kwargs.get('mandatoryInStatuses')
-			self._shared_fields = [FieldDefinition(**f, client=self._client) for f in kwargs.get('sharedFields', [])]
-			self._title = kwargs.get('title')
-			self._tracker_item_field = kwargs.get('trackerItemField')
-			self._value_model = kwargs.get('valueModel')
-			self._loaded = True
+		if self._type != 'FieldReference':
+			self._load(kwargs)
 
 	@property
 	def id(self) -> int:
@@ -155,7 +139,7 @@ class FieldDefinition:
 		""""""
 		return self._value_model
 
-	def _load(self):
+	def _load(self, data: dict[str, Any] = None):
 		"""Loads the rest of the field's data. When a field is fetched using 
 		`Tracker.get_fields` only the ID and Name of the field are retrieved. 
 		This prevents a lot of extra data that's not needed from being sent. Thus, 
@@ -164,19 +148,41 @@ class FieldDefinition:
 		if self._loaded:
 			logger.info('Field already loaded, ignoring...')
 			return
-		field_data: dict[str, Any] = self._client.get(f'trackers/{self.tracker.id}/fields/{self.id}')
-		self._description = field_data.get('description')
-		self._formula = field_data.get('formula')
-		self._hidden = field_data.get('hidden')
-		self._hide_if_dependency_formula = field_data.get('hideIfDependencyFormula')
-		self._legacy_rest_name = field_data.get('legacyRestName')
-		self._mandatory_if_dependency_formula = field_data.get('mandatoryIfDependencyFormula')
-		self._mandatory_in_statuses = field_data.get('mandatoryInStatuses')
-		self._shared_fields = [FieldDefinition(**f, client=self._client) for f in field_data.get('sharedFields', [])]
-		self._title = field_data.get('title')
-		self._tracker_item_field = field_data.get('trackerItemField')
-		self._value_model = field_data.get('valueModel')
+		if not data:
+			data: dict[str, Any] = self._client.get(f'trackers/{self.tracker.id}/fields/{self.id}')
+		self._description = data.get('description')
+		self._formula = data.get('formula')
+		self._hidden = data.get('hidden')
+		self._hide_if_dependency_formula = data.get('hideIfDependencyFormula')
+		self._legacy_rest_name = data.get('legacyRestName')
+		self._mandatory_if_dependency_formula = data.get('mandatoryIfDependencyFormula')
+		self._mandatory_in_statuses = data.get('mandatoryInStatuses')
+		self._multiple_values = data.get('multipleValues')
+		options = data.get('options')
+		self._options = [ChoiceValue(**o) for o in options] if options else None
+		self._shared_fields = [FieldDefinition(**f, client=self._client) for f in data.get('sharedFields', [])]
+		self._title = data.get('title')
+		self._tracker_item_field = data.get('trackerItemField')
+		self._value_model = data.get('valueModel')
 		self._loaded = True
+
+	def get_choice(self, choice: str | int) -> ChoiceValue:
+		"""Fetches a specific choice value from the list of available choices on this field.
+		
+		Params:
+		choice — The name or ID of the choice value to fetch. — str | int
+		
+		Returns:
+		`ChoiceValue` — An available choice if one exists."""
+		if self._type != 'OptionChoiceField':
+			return None
+		if isinstance(choice, str):
+			choice_dict = {c.name: c for c in self._options}
+		elif isinstance(choice, int):
+			choice_dict = {c.id: c for c in self._options}
+		else:
+			raise TypeError(f'expected str or int, got {type(choice)}')
+		return choice_dict.get(choice)
 
 	def __repr__(self) -> str:
 		return f'Field(id={self.id}, name={self.name})'
