@@ -114,6 +114,16 @@ class FieldDefinition:
 	def mandatory_in_statuses(self) -> list[dict[str, Any]] | None:
 		""""""
 		return self._mandatory_in_statuses
+	
+	@property
+	def multiple_values(self) -> bool | None:
+		""""""
+		return self._multiple_values
+	
+	@property
+	def options(self) -> list[ChoiceValue] | None:
+		""""""
+		return self._options
 
 	@property
 	@loadable
@@ -138,6 +148,11 @@ class FieldDefinition:
 	def value_model(self) -> str | None:
 		""""""
 		return self._value_model
+	
+	@property
+	def reference_type(self) -> str | None:
+		""""""
+		return self._reference_type
 
 	def _load(self, data: dict[str, Any] = None):
 		"""Loads the rest of the field's data. When a field is fetched using 
@@ -164,6 +179,7 @@ class FieldDefinition:
 		self._title = data.get('title')
 		self._tracker_item_field = data.get('trackerItemField')
 		self._value_model = data.get('valueModel')
+		self._reference_type = data.get('referenceType')
 		self._loaded = True
 
 	def get_choice(self, choice: str | int) -> ChoiceValue:
