@@ -303,6 +303,13 @@ class Tracker:
 		**kwargs,
 	) -> TrackerItem:
 		"""Creates a new tracker item in the current tracker."""
+		params = {}
+		if parent_id:
+			params['parentItemId'] = parent_id
+		if reference_id:
+			params['referenceItemId'] = reference_id
+		if position and position.upper() in ['BEFORE', 'AFTER', 'BELOW']:
+			params['position'] = position.upper()
 		# ! Need to grab system fields into the top level data level.
 		# TODO: Make the second variable of this the API name
 		system_fields = {k[1:]: v for k, v in TrackerItem.__annotations__.items()} # remove the _ leading the param
@@ -354,7 +361,7 @@ class Tracker:
 				}
 				data['customFields'].append(field_json)
 		try:
-			item = self._client.post(f'trackers/{self.id}/items', json_=data)
+			item = self._client.post(f'trackers/{self.id}/items', json_=data, params=params)
 			return TrackerItem(**item, client=self._client, tracker=self)
 		except Exception as e:
 			logger.exception(e)
