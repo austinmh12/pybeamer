@@ -116,11 +116,13 @@ class FieldDefinition:
 		return self._mandatory_in_statuses
 	
 	@property
+	@loadable
 	def multiple_values(self) -> bool | None:
 		""""""
 		return self._multiple_values
 	
 	@property
+	@loadable
 	def options(self) -> list[ChoiceValue] | None:
 		""""""
 		return self._options
@@ -150,6 +152,7 @@ class FieldDefinition:
 		return self._value_model
 	
 	@property
+	@loadable
 	def reference_type(self) -> str | None:
 		""""""
 		return self._reference_type
@@ -182,7 +185,7 @@ class FieldDefinition:
 		self._reference_type = data.get('referenceType')
 		self._loaded = True
 
-	def get_choice(self, choice: str | int) -> ChoiceValue:
+	def get_choice(self, choice: str | int) -> ChoiceValue | None:
 		"""Fetches a specific choice value from the list of available choices on this field.
 		
 		Params:
@@ -190,7 +193,7 @@ class FieldDefinition:
 		
 		Returns:
 		`ChoiceValue` — An available choice if one exists."""
-		if self._type != 'OptionChoiceField':
+		if self._options is None:
 			return None
 		if isinstance(choice, str):
 			choice_dict = {c.name: c for c in self._options}
@@ -201,7 +204,7 @@ class FieldDefinition:
 		return choice_dict.get(choice)
 
 	def __repr__(self) -> str:
-		return f'Field(id={self.id}, name={self.name})'
+		return f'FieldDefinition(id={self.id}, name={self.name})'
 	
 	def __str__(self) -> str:
 		return self.name

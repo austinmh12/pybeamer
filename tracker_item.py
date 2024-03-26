@@ -3,10 +3,11 @@ from typing import TYPE_CHECKING, Any
 
 from loguru import logger
 from datetime import datetime
+from requests.exceptions import HTTPError
 
 from .rest_client import RestClient
 from .user import User
-from .fields import Field, FieldDefinition
+from .fields import Field, FieldDefinition, ChoiceValue
 from .utils import loadable, clamp, pages
 
 if TYPE_CHECKING:
@@ -40,7 +41,7 @@ class TrackerItem:
 		_tracker: Tracker | None
 		_children: list[TrackerItem] | None
 		_custom_fields: list[Field] | None
-		_priority: Field | None
+		_priority: ChoiceValue | None # I don't like this but that seems to be the case
 		_status: Field | None
 		_categories: list[Field] | None
 		_subjects: list[Field] | None
@@ -60,7 +61,8 @@ class TrackerItem:
 		prop_defaults = {k: None for k in self.__class__.__annotations__}
 		self.__dict__.update(prop_defaults)
 		# Want these to have standard values
-		self._fields = list() 
+		self._fields = list()
+		self._children = None
 		self._loaded = False
 
 		self._id: int = id
@@ -381,26 +383,45 @@ class TrackerItem:
 		custom_fields: list[dict[str, Any]] = data.get('customFields')
 		self._custom_fields = []
 		for custom_field in custom_fields:
-			field = self.get_field(custom_field.get('id'))
+			print(custom_field)
+			field = self.get_field(custom_field.get('fieldId'))
 			if field:
 				self._custom_fields.append(field)
 		
 		# These are all fields that exist in the _fields prop but no editable information is provided
 		# Fetch them from the _fields property to get that info
-		self._priority = Field(**data.get('priority'), client=self._client, item_id=self.id)
-		priority_ref = self._fields[self._fields.index(self._priority)]
-		if priority_ref:
-			self._priority._editable = priority_ref._editable
-		self._status = Field(**data.get('status'), client=self._client, item_id=self.id)
-		status_ref = self._fields[self._fields.index(self._status)]
-		if status_ref:
-			self._status._editable = status_ref._editable
+		# ! From the get_tracker_item Priority and Status (and the others probably) return the following
+		# ! "priority":{"id":0,"name":"Unset","type":"ChoiceOptionReference"}
+		# ! Which this doesn't handle. These will need to get the field from the issue by
+		# ! name and instantiate the ChoiceValue from the given information and set the 
+		# ! ChoiceField._value to the parsed ChoiceValue
+		field_map = {f.name: f for f in self._fields}
+		
+		# This isn't a field? but instead a choice value?
+		priority = data.get('priority')
+		priority_val = ChoiceValue(**priority) if priority else None
+		self._priority = priority_val
+		# priority_field = field_map.get('Priority')
+		# self._priority = priority_field
+		# self._priority._value = priority_val
 
-		self._categories = [Field(**c, client=self._client, item_id=self.id) for c in data.get('categories')]
-		self._subjects = [Field(**s, client=self._client, item_id=self.id) for s in data.get('subjects')]
-		self._resolutions = [Field(**r, client=self._client, item_id=self.id) for r in data.get('resolutions')]
-		self._severities = [Field(**s, client=self._client, item_id=self.id) for s in data.get('severities')]
-		self._teams = [Field(**t, client=self._client, item_id=self.id) for t in data.get('teams')]
+		status = data.get('status')
+		status_val = ChoiceValue(**status) if status else None
+		status_field = field_map.get('Status')
+		self._status = status_field
+		self._status._value = status_val
+
+		# TODO: These need to match the priority and status method
+		# self._categories = [Field(**c, client=self._client, item_id=self.id) for c in data.get('categories')]
+		# self._subjects = [Field(**s, client=self._client, item_id=self.id) for s in data.get('subjects')]
+		# self._resolutions = [Field(**r, client=self._client, item_id=self.id) for r in data.get('resolutions')]
+		# self._severities = [Field(**s, client=self._client, item_id=self.id) for s in data.get('severities')]
+		# self._teams = [Field(**t, client=self._client, item_id=self.id) for t in data.get('teams')]
+		self._categories = data.get('categories')
+		self._subjects = data.get('subjects')
+		self._resolutions = data.get('resolutions')
+		self._severities = data.get('severities')
+		self._teams = data.get('teams')
 		
 		self._versions = data.get('versions')
 		self._ordinal = data.get('ordinal')
@@ -419,6 +440,14 @@ class TrackerItem:
 		
 		Returns:
 		list[`TrackerItem`] — A list of the child items to this item."""
+		# First check to see if all the children are loaded, return them if they are
+		children = self.children
+		if children is not None:
+			total = self._client.get(f'items/{self.id}/children', params={'page': 1, 'pageSize': 1})['total']
+			if total == len(children):
+				return children
+			
+		# Otherwise, fetch them
 		fetch_all = page == 0
 		if fetch_all:
 			page = 1
@@ -433,6 +462,8 @@ class TrackerItem:
 				params['page'] += 1
 				item_data = self._client.get(f'items/{self.id}/children', params=params)
 				items.extend([TrackerItem(**ti, client=self._client, tracker=self.tracker, parent=self) for ti in item_data['itemRefs']])
+		if self._children is None:
+			self._children = list()
 		self._children.extend(items)
 		self._children = list(set(self._children))
 		return items
@@ -505,7 +536,7 @@ class TrackerItem:
 	def create_child_tracker_item(
 		self,
 		name: str,
-		description: str,
+		description: str = '--',
 		description_format: str = 'PlainText',
 		reference_id: int = None,
 		position: str = 'AFTER',

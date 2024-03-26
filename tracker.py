@@ -295,7 +295,7 @@ class Tracker:
 	def create_tracker_item(
 		self,
 		name: str,
-		description: str,
+		description: str = '--',
 		description_format: str = 'PlainText',
 		parent_id: int = None,
 		reference_id: int = None,
@@ -376,17 +376,24 @@ class Tracker:
 				field_json = {
 					'fieldId': field_def.id,
 					'name': field_def.name,
-					'value': value,
-					'type': field_def._type
 				}
+				if 'ChoiceFieldValue' in field_def.value_model:
+					field_json['type'] = 'ChoiceFieldValue'
+					choice = field_def.get_choice(value)
+					field_json['values'] = [choice.json]
+				else:
+					field_json['type'] = field_def.value_model
+					field_json['value'] = value
 				data['customFields'].append(field_json)
-		return data
-		# try:
-		# 	item = self._client.post(f'trackers/{self.id}/items', json_=data, params=params)
-		# 	return TrackerItem(**item, client=self._client, tracker=self)
-		# except Exception as e:
-		# 	logger.exception(e)
-		# 	raise e
+		# return data
+		try:
+			item = self._client.post(f'trackers/{self.id}/items', json_=data, params=params)
+			print(item)
+			del item['tracker']
+			return TrackerItem(**item, client=self._client, tracker=self)
+		except Exception as e:
+			logger.exception(e)
+			raise e
 
 	def __repr__(self) -> str:
 		return f'Tracker(id={self.id}, name={self.name})'
