@@ -13,7 +13,7 @@ from .utils import clamp, pages
 class Codebeamer:
 	"""The Codebeamer API client"""
 	def __init__(self, url: str, username: str, password: str, *args, **kwargs):
-		self._client: RestClient = RestClient(url, username, password, api_root='cb/api/v3', *args, **kwargs)
+		self._client: RestClient = RestClient(url, username, password, *args, **kwargs)
 
 	def get_projects(self) -> list[Project]:
 		"""Fetches all the projects in the system.
