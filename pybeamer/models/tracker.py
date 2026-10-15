@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING, Any, get_args
 from datetime import datetime
 from loguru import logger
 
-from .rest_client import RestClient
+from ..api_client import APIClient
 from .user import User
 from .tracker_item import TrackerItem
 from .fields import FieldDefinition, Field
-from .utils import loadable, clamp, pages, snake_to_camel, snake_to_title
+from ..utils import loadable, clamp, pages, snake_to_camel, snake_to_title
 
 if TYPE_CHECKING:
 	from .projects import Project
@@ -46,7 +46,7 @@ class Tracker:
 
 		self._id: int = id
 		self._name: str = name
-		self._client: RestClient = kwargs.get('client')
+		self._client: APIClient = kwargs.get('client')
 		# Want to try and get this regardless of type since it can come from the Project class
 		self._project = kwargs.get('project')
 		# type only appears in GET /projects/{projectId}/trackers

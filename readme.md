@@ -8,9 +8,8 @@ The **pybeamer** library provides a **simple** way to interact with codeBeamer's
 From PyPi
 * Need to figure this out
 
-From Source
-* Git clone repository
-* Use `pip install -r requirements.txt` to install the required packages
+From GitHub
+`pip install -U git+https://github.com/austinmh12/pybeamer.git`
 
 ## Examples
 More examples to come in the future.

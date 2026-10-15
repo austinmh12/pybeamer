@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Any
 from loguru import logger
 from datetime import datetime
 
-from .rest_client import RestClient
-from .utils import loadable, clamp, pages
+from ..api_client import APIClient
+from ..utils import loadable, clamp, pages
 
 if TYPE_CHECKING:
 	from .tracker import Tracker
@@ -41,7 +41,7 @@ class FieldDefinition:
 
 		self._id: int = id
 		self._name: str = name
-		self._client: RestClient = kwargs.get('client')
+		self._client: APIClient = kwargs.get('client')
 		from .tracker import Tracker
 		tracker = kwargs.get('tracker')
 		if tracker:
@@ -248,7 +248,7 @@ class Field:
 		self._type: str = kwargs.get('type')
 		self._shared_field_names: list[str] = kwargs.get('sharedFieldNames')
 		self._editable: bool = kwargs.get('editable')
-		self._client: RestClient = kwargs.get('client')
+		self._client: APIClient = kwargs.get('client')
 		self._item_id: int = kwargs.get('item_id')
 
 	@property

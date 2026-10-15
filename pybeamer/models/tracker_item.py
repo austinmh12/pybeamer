@@ -5,10 +5,10 @@ from loguru import logger
 from datetime import datetime
 from requests.exceptions import HTTPError
 
-from .rest_client import RestClient
+from ..api_client import APIClient
 from .user import User
 from .fields import Field, FieldDefinition, ChoiceValue
-from .utils import loadable, clamp, pages
+from ..utils import loadable, clamp, pages
 
 if TYPE_CHECKING:
 	from .tracker import Tracker
@@ -67,7 +67,7 @@ class TrackerItem:
 
 		self._id: int = id
 		self._name: str = name
-		self._client: RestClient = kwargs.get('client')
+		self._client: APIClient = kwargs.get('client')
 		# Want to try and get this regardless of type since it can come from the Tracker class
 		self._tracker = kwargs.get('tracker')
 		# Want to try and get this regardless of type since it can come from the TrackerItem class

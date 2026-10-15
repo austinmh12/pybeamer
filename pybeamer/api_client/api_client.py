@@ -7,9 +7,7 @@ from requests.exceptions import HTTPError
 from urllib.parse import urlencode
 from time import sleep
 
-class RestClient:
-	default_headers = {'Content-Type': 'application/json'}
-
+class APIClient:
 	def __init__(
 		self,
 		url: str,
@@ -29,6 +27,7 @@ class RestClient:
 		if username and password:
 			self._session_auth = {'username': username, 'password': password}
 		self._session.auth = (username, password)
+		self.default_headers = {'Content-Type': 'application/json'}
 
 	def resource_url(self, resource: str) -> str:
 		return '/'.join([self.api_root, resource])
@@ -37,7 +36,7 @@ class RestClient:
 	def url_joiner(url: str, path: str) -> str:
 		return '/'.join(s.strip('/') for s in [url, path])
 	
-	def request(
+	def __call__(
 		self,
 		method: str = 'GET',
 		path: str = '/',
@@ -107,7 +106,7 @@ class RestClient:
 		headers: dict[str, Any] | None = None,
 		not_json_response: bool | None = None,
 	) -> str | Response:
-		resp = self.request('GET', path=path, flags=flags, params=params, data=data, headers=headers)
+		resp = self('GET', path=path, flags=flags, params=params, data=data, headers=headers)
 		if not_json_response:
 			return resp.content
 		else:
@@ -126,7 +125,7 @@ class RestClient:
 		files: dict[str, Any] | None = None,
 	) -> Response | None:
 		try:
-			return self.request('POST', path=path, data=data, json_=json_, headers=headers, files=files, params=params)
+			return self('POST', path=path, data=data, json_=json_, headers=headers, files=files, params=params)
 		except ValueError:
 			return None
 		
@@ -139,7 +138,7 @@ class RestClient:
 		json_: dict[str, Any] | None = None
 	) -> Response:
 		try:
-			return self.request('PUT', path=path, data=data, json_=json_, headers=headers, files=files)
+			return self('PUT', path=path, data=data, json_=json_, headers=headers, files=files)
 		except ValueError:
 			return None
 
@@ -151,7 +150,7 @@ class RestClient:
 		params: dict[str, Any] | None = None,
 		json_: dict[str, Any] | None = None
 	) -> None:
-		self.request('DELETE', path=path, data=data, headers=headers, params=params, json_=json_)
+		self('DELETE', path=path, data=data, headers=headers, params=params, json_=json_)
 
 	def patch(
 		self,
@@ -163,6 +162,6 @@ class RestClient:
 		json_: dict[str, Any] | None = None
 	) -> Response:
 		try:
-			return self.request('PATCH', path=path, data=data, json_=json_, headers=headers, params=params, files=files)
+			return self('PATCH', path=path, data=data, json_=json_, headers=headers, params=params, files=files)
 		except ValueError:
 			return None

@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Any
 from loguru import logger
 from datetime import datetime
 
-from .rest_client import RestClient
-from .utils import loadable
+from ..api_client import APIClient
+from ..utils import loadable
 
 class User:
 	"""Represents a user in codeBeamer."""
@@ -34,7 +34,7 @@ class User:
 		self._id: int = id
 		self._name: str = name
 		self._email: str | None = kwargs.get('email') # Not present for system users
-		self._client: RestClient = kwargs.get('client')
+		self._client: APIClient = kwargs.get('client')
 		# type only appears in GET /users
 		if kwargs.get('type'):
 			# if type is present then no other information is present

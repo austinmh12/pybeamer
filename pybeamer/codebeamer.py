@@ -3,17 +3,17 @@ from typing import Any
 
 from loguru import logger
 
-from .rest_client import RestClient
-from .projects import Project
-from .user import User
-from .tracker import Tracker
-from .tracker_item import TrackerItem
+from .api_client import APIClient
+from .models.projects import Project
+from .models.user import User
+from .models.tracker import Tracker
+from .models.tracker_item import TrackerItem
 from .utils import clamp, pages
 
 class Codebeamer:
 	"""The Codebeamer API client"""
 	def __init__(self, url: str, username: str, password: str, *args, **kwargs):
-		self._client: RestClient = RestClient(url, username, password, *args, **kwargs)
+		self._client: APIClient = APIClient(url, username, password, *args, **kwargs)
 
 	def get_projects(self) -> list[Project]:
 		"""Fetches all the projects in the system.

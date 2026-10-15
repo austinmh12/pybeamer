@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING, Any
 from loguru import logger
 from datetime import datetime
 
-from .rest_client import RestClient
+from ..api_client import APIClient
 from .user import User
 from .tracker import Tracker
-from .utils import loadable
+from ..utils import loadable
 
 class Project:
 	"""Represents a project in codeBeamer."""
@@ -31,7 +31,7 @@ class Project:
 	def __init__(self, id: int, name: str, **kwargs):
 		self._id: int = id
 		self._name: str = name
-		self._client: RestClient = kwargs.get('client')
+		self._client: APIClient = kwargs.get('client')
 		# type only appears in GET /projects
 		if not kwargs.get('type'):
 			# if type is present then no other information is present
