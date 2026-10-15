@@ -1,13 +1,14 @@
 from loguru import logger
 from math import ceil
 from string import ascii_uppercase, ascii_lowercase
+from datetime import datetime
 
-def loadable(func):
-	"""Decorator for calling load on property getter functions. Class must have a 
+def lazy(func):
+	"""Decorator for calling _load on property getter functions. Class must have a 
 	_loaded bool variable and a _load() function with no arguments. This is really just an 
 	internal decorator."""
 
-	def _loadable(*args, **kwargs):
+	def _lazy(*args, **kwargs):
 		logger.trace(f'func: {func}, args: {args}, kwargs: {kwargs}')
 		cls = args[0]
 		is_loaded: bool = cls._loaded
@@ -18,7 +19,7 @@ def loadable(func):
 			cls._load()
 			return func(cls)
 	
-	return _loadable
+	return _lazy
 
 def clamp(value: int, minimum: int, maximum: int) -> int:
 	return max(minimum, min(maximum, value))
@@ -35,3 +36,8 @@ def snake_to_camel(value: str) -> str:
 def snake_to_title(value: str) -> str:
 	"""Converts snake_case to Title Case."""
 	return ' '.join([w.capitalize() for w in value.split('_')])
+
+def parse_date(value: str | None) -> datetime | None:
+	if not value:
+		return
+	return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%f')

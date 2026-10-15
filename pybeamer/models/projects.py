@@ -7,31 +7,17 @@ from datetime import datetime
 from ..api_client import APIClient
 from .user import User
 from .tracker import Tracker
-from ..utils import loadable
+from ..utils import lazy, parse_date
 
 class Project:
 	"""Represents a project in codeBeamer."""
-
-	if TYPE_CHECKING:
-		_description: str | None
-		_description_format: str | None
-		_version: int | None
-		_key_name: str | None
-		_category: str | None
-		_closed: bool | None
-		_deleted: bool | None
-		_template: bool | None
-		_created_at: datetime | None
-		_created_by: User | None
-		_modified_at: datetime | None
-		_modified_by: User | None
-		_trackers: list[Tracker]
-		_loaded: bool
 
 	def __init__(self, id: int, name: str, **kwargs):
 		self._id: int = id
 		self._name: str = name
 		self._client: APIClient = kwargs.get('client')
+		self._trackers: list[Tracker] = list()
+		self._loaded: bool = False
 		# type only appears in GET /projects
 		if not kwargs.get('type'):
 			# if type is present then no other information is present
@@ -39,9 +25,11 @@ class Project:
 		else:
 			prop_defaults = {k: None for k in self.__class__.__annotations__}
 			self.__dict__.update(prop_defaults)
-			self._trackers = list()
 			self._loaded = False
 
+	############
+	# Identity #
+	############
 	@property
 	def id(self) -> int:
 		"""The ID of the project."""
@@ -52,78 +40,84 @@ class Project:
 		"""The name of the project."""
 		return self._name
 
+	###############
+	# Lazy-loaded #
+	###############
 	@property
-	@loadable
+	@lazy
 	def description(self) -> str | None:
 		"""The project description."""
 		return self._description
 
 	@property
-	@loadable
+	@lazy
 	def description_format(self) -> str | None:
 		"""The format of the project description."""
 		return self._description_format
 
 	@property
-	@loadable
+	@lazy
 	def version(self) -> int | None:
 		"""The project version."""
 		return self._version
 
 	@property
-	@loadable
+	@lazy
 	def key_name(self) -> str | None:
 		"""The project key identifier."""
 		return self._key_name
 
 	@property
-	@loadable
+	@lazy
 	def category(self) -> str | None:
 		"""The category of the project."""
 		return self._category
 
 	@property
-	@loadable
+	@lazy
 	def closed(self) -> bool | None:
 		"""Flag for whether the project is closed or not."""
 		return self._closed
 
 	@property
-	@loadable
+	@lazy
 	def deleted(self) -> bool | None:
 		"""Flag for whether the project is deleted or not."""
 		return self._deleted
 
 	@property
-	@loadable
+	@lazy
 	def template(self) -> bool | None:
 		"""Flag for whether the project is a template or not."""
 		return self._template
 
 	@property
-	@loadable
+	@lazy
 	def created_at(self) -> datetime | None:
 		"""The datetime the project was created at."""
 		return self._created_at
 
 	@property
-	@loadable
+	@lazy
 	def created_by(self) -> User | None:
 		"""The user that created the project."""
 		return self._created_by
 
 	@property
-	@loadable
+	@lazy
 	def modified_at(self) -> datetime | None:
 		"""The datetime the project was last modified."""
 		return self._modified_at
 
 	@property
-	@loadable
+	@lazy
 	def modified_by(self) -> User | None:
 		"""The user that last modified the project."""
 		return self._modified_by
 
+	###########
+	# Loading #
+	###########
 	def _load(self, data: dict[str, Any] = None):
 		"""Loads the rest of the project's data. When a project is fetched using 
 		`Codebeamer.get_projects` only the ID and Name of the project are retrieved. 
@@ -135,7 +129,9 @@ class Project:
 			return
 		if not data:
 			data: dict[str, Any] = self._client.get(f'projects/{self.id}')
+
 		logger.debug(data)
+
 		self._description = data.get('description')
 		self._description_format = data.get('descriptionFormat')
 		self._version = data.get('version')
@@ -144,11 +140,11 @@ class Project:
 		self._closed = data.get('closed')
 		self._deleted = data.get('deleted')
 		self._template = data.get('template')
-		self._created_at = datetime.strptime(data.get('createdAt'), '%Y-%m-%dT%H:%M:%S.%f')
+		self._created_at = parse_date(data.get('createdAt'))
 		self._created_by = User(**data.get('createdBy'), client=self._client)
-		self._modified_at = datetime.strptime(data.get('modifiedAt'), '%Y-%m-%dT%H:%M:%S.%f')
+		self._modified_at = parse_date(data.get('modifiedAt'))
 		self._modified_by = User(**data.get('modifiedBy'), client=self._client)
-		self._trackers = list()
+
 		self._loaded = True
 
 	def get_trackers(self) -> list[Tracker]:
