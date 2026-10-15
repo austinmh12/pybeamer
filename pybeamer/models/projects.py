@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from loguru import logger
 from datetime import datetime
@@ -18,14 +18,6 @@ class Project:
 		self._client: APIClient = kwargs.get('client')
 		self._trackers: list[Tracker] = list()
 		self._loaded: bool = False
-		# type only appears in GET /projects
-		if not kwargs.get('type'):
-			# if type is present then no other information is present
-			self._load(kwargs)
-		else:
-			prop_defaults = {k: None for k in self.__class__.__annotations__}
-			self.__dict__.update(prop_defaults)
-			self._loaded = False
 
 	############
 	# Identity #
