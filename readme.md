@@ -75,6 +75,10 @@ project_by_name = codebeamer.get_project('Project')
 ```
 
 ## API Endpoint Progress
+These are all the endpoints listed in swagger file for the version of Codebeamer that I have access to (2.2.0.1). The REST API is v3.
+
+Endpoints that have a function listed below them have at least a skeleton, endpoints that are ~~struck out~~ are fully implemented and tested.
+
 ### Associations
 * POST /associations
 * DELETE /associations/{associationId}
@@ -174,20 +178,33 @@ project_by_name = codebeamer.get_project('Project')
 
 ### Projects
 * ~~GET /projects~~
-  * `Codebeamer.get_projects()`
+  * `Codebeamer.projects.get_projects()`
+  * `Codebeamer.projects()`
 * ~~GET /projects/{projectId}~~
-  * `Codebeamer.get_project()`
+  * `Codebeamer.projects.get_project()`
+  * `Codebeamer.projects(project=)`
+  * `Codebeamer.projects.get_by_id()`
+  * `Codebeamer.projects.get_by_name()`
 * GET /projects/{projectId}/members
+  * `Codebeamer.projects.get_members()`
+  * `Codebeamer.projects.get_member()`
+  * `Codebeamer.projects.get_member_by_id()`
+  * `Codebeamer.projects.get_member_by_name()`
 * GET /projects/{projectId}/members/{userId}/permissions
+  * `Codebeamer.projects.get_member_project_permissions()`
 * ~~GET /projects/{projectId}/trackers~~
   * `Project.get_trackers()`
   * `Project.get_tracker()`
 * POST /projects/{projectId}/trackers
+  * `Codebeamer.projects.create_tracker()`
 * POST /projects/{projectId}/trackers/search
+  * `Codebeamer.projects.search_trackers()`
 * GET /projects/{projectId}/wikipages
+  * `Codebeamer.projects.get_wiki_pages()`
 * POST /projects/deploy
+  * `Codebeamer.projects.deploy_configuration()`
 * ~~POST /projects/search~~
-  * `Codebeamer.get_project_by_key()` which is all this endpoint does
+  * `Codebeamer.projects.get_by_key()` which is all this endpoint does
 
 ### Wiki
 * POST /projects/{projectId}/wiki2html
