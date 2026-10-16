@@ -5,3 +5,9 @@ class DeploymentService:
 
 	def __init__(self, client: APIClient):
 		self._client = client
+
+	#############
+	# Endpoints #
+	#############
+	def start_deployment(self, **kwargs): ... # TODO: args
+	def export_projects_for_deployment(self, **kwargs): ... # TODO: args
