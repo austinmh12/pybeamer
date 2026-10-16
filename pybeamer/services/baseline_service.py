@@ -5,3 +5,8 @@ class BaselineService:
 
 	def __init__(self, client: APIClient):
 		self._client = client
+
+	#############
+	# Endpoints #
+	#############
+	def create_baseline(self, **kwargs): ... # TODO: args
