@@ -17,7 +17,9 @@ class ProjectService:
 			return self.get_project(project)
 		return self.get_projects()
 
-	############
+	#############
+	# Endpoints #
+	#############
 	# Projects #
 	############
 	def get_projects(self) -> list[Project]:
