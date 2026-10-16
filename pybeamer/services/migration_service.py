@@ -5,3 +5,8 @@ class MigrationService:
 
 	def __init__(self, client: APIClient):
 		self._client = client
+
+	#############
+	# Endpoints #
+	#############
+	def migrate_attachment(self, **kwargs): ... # TODO: args
