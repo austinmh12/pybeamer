@@ -6,7 +6,7 @@ from loguru import logger
 from .api_client import APIClient
 from .models import Project, User, Tracker, TrackerItem
 from .utils import clamp, pages
-from .services import ProjectService
+from .services import *
 
 class Codebeamer:
 	"""
@@ -20,16 +20,227 @@ class Codebeamer:
 		self._client = APIClient(url, username, password, *args, **kwargs)
 
 		# Services
+		self._associations: AssociationService | None = None
+		self._attachments: AttachmentService | None = None
+		self._background_jobs: BackgroundJobService | None = None
+		self._baselines: BaselineService | None = None
+		self._branches: BranchesService | None = None
+		self._deployments: DeploymentService | None = None
+		self._exports: ExportService | None = None
+		self._groups: GroupService | None = None
+		self._migrations: MigrationService | None = None
 		self._projects: ProjectService | None = None
+		self._reports: ReportService | None = None
+		self._repository_items: RepositoryItemService | None = None
+		self._roles: RoleService | None = None
+		self._system_admin: SystemAdministratorService | None = None
+		self._system: SystemService | None = None
+		self._test_management: TestManagementService | None = None
+		self._test_run: TestRunService | None = None
+		self._traceability: TraceabilityService | None = None
+		self._tracker_item_attachments: TrackerItemAttachmentService | None = None
+		self._tracker_item_comments: TrackerItemCommentService | None = None
+		self._tracker_item_move: TrackerItemMoveService | None = None
+		self._tracker_items: TrackerItemService | None = None
+		self._tracker_permissions: TrackerPermissionService | None = None
+		self._tracker_reports: TrackerReportService | None = None
+		self._trackers: TrackerItem | None = None
+		self._tracker_tree: TrackerTreeService | None = None
+		self._users: UserService | None = None
+		self._wiki_comments: WikiCommentService | None = None
+		self._wiki: WikiService | None = None
+		self._working_set_permissions: WorkingSetPermissionService | None = None
+		self._working_sets: WorkingSetService | None = None
 
 	############
 	# Services #
 	############
 	@property
+	def associations(self) -> AssociationService:
+		if self._associations is None:
+			self._associations = AssociationService(self._client)
+		return self._associations
+	
+	@property
+	def attachments(self) -> AttachmentService:
+		if self._attachments is None:
+			self._attachments = AttachmentService(self._client)
+		return self._attachments
+	
+	@property
+	def background_jobs(self) -> BackgroundJobService:
+		if self._background_jobs is None:
+			self._background_jobs = BackgroundJobService(self._client)
+		return self._background_jobs
+	
+	@property
+	def baselines(self) -> BaselineService:
+		if self._baselines is None:
+			self._baselines = BaselineService(self._client)
+		return self._baselines
+	
+	@property
+	def branches(self) -> BranchesService:
+		if self._branches is None:
+			self._branches = BranchesService(self._client)
+		return self._branches
+	
+	@property
+	def deployments(self) -> DeploymentService:
+		if self._deployments is None:
+			self._deployments = DeploymentService(self._client)
+		return self._deployments
+	
+	@property
+	def exports(self) -> ExportService:
+		if self._exports is None:
+			self._exports = ExportService(self._client)
+		return self._exports
+	
+	@property
+	def groups(self) -> GroupService:
+		if self._groups is None:
+			self._groups = GroupService(self._client)
+		return self._groups
+	
+	@property
+	def migrations(self) -> MigrationService:
+		if self._migrations is None:
+			self._migrations = MigrationService(self._client)
+		return self._migrations
+	
+	@property
 	def projects(self) -> ProjectService:
 		if self._projects is None:
 			self._projects = ProjectService(self._client)
 		return self._projects
+	
+	@property
+	def reports(self) -> ReportService:
+		if self._reports is None:
+			self._reports = ReportService(self._client)
+		return self._reports
+	
+	@property
+	def repository_items(self) -> RepositoryItemService:
+		if self._repository_items is None:
+			self._repository_items = RepositoryItemService(self._client)
+		return self._repository_items
+	
+	@property
+	def roles(self) -> RoleService:
+		if self._roles is None:
+			self._roles = RoleService(self._client)
+		return self._roles
+	
+	@property
+	def system_admin(self) -> SystemAdministratorService:
+		if self._system_admin is None:
+			self._system_admin = SystemAdministratorService(self._client)
+		return self._system_admin
+	
+	@property
+	def system(self) -> SystemService:
+		if self._system is None:
+			self._system = SystemService(self._client)
+		return self._system
+	
+	@property
+	def test_management(self) -> TestManagementService:
+		if self._test_management is None:
+			self._test_management = TestManagementService(self._client)
+		return self._test_management
+	
+	@property
+	def test_run(self) -> TestRunService:
+		if self._test_run is None:
+			self._test_run = TestRunService(self._client)
+		return self._test_run
+	
+	@property
+	def traceability(self) -> TraceabilityService:
+		if self._traceability is None:
+			self._traceability = TraceabilityService(self._client)
+		return self._traceability
+	
+	@property
+	def tracker_item_attachments(self) -> TrackerItemAttachmentService:
+		if self._tracker_item_attachments is None:
+			self._tracker_item_attachments = TrackerItemAttachmentService(self._client)
+		return self._tracker_item_attachments
+	
+	@property
+	def tracker_item_comments(self) -> TrackerItemCommentService:
+		if self._tracker_item_comments is None:
+			self._tracker_item_comments = TrackerItemCommentService(self._client)
+		return self._tracker_item_comments
+	
+	@property
+	def tracker_item_move(self) -> TrackerItemMoveService:
+		if self._tracker_item_move is None:
+			self._tracker_item_move = TrackerItemMoveService(self._client)
+		return self._tracker_item_move
+	
+	@property
+	def tracker_items(self) -> TrackerItemService:
+		if self._tracker_items is None:
+			self._tracker_items = TrackerItemService(self._client)
+		return self._tracker_items
+	
+	@property
+	def tracker_permissions(self) -> TrackerPermissionService:
+		if self._tracker_permissions is None:
+			self._tracker_permissions = TrackerPermissionService(self._client)
+		return self._tracker_permissions
+	
+	@property
+	def tracker_reports(self) -> TrackerReportService:
+		if self._tracker_reports is None:
+			self._tracker_reports = TrackerReportService(self._client)
+		return self._tracker_reports
+	
+	@property
+	def trackers(self) -> TrackerItem:
+		if self._trackers is None:
+			self._trackers = TrackerItem(self._client)
+		return self._trackers
+	
+	@property
+	def tracker_tree(self) -> TrackerTreeService:
+		if self._tracker_tree is None:
+			self._tracker_tree = TrackerTreeService(self._client)
+		return self._tracker_tree
+	
+	@property
+	def users(self) -> UserService:
+		if self._users is None:
+			self._users = UserService(self._client)
+		return self._users
+	
+	@property
+	def wiki_comments(self) -> WikiCommentService:
+		if self._wiki_comments is None:
+			self._wiki_comments = WikiCommentService(self._client)
+		return self._wiki_comments
+	
+	@property
+	def wiki(self) -> WikiService:
+		if self._wiki is None:
+			self._wiki = WikiService(self._client)
+		return self._wiki
+	
+	@property
+	def working_set_permissions(self) -> WorkingSetPermissionService:
+		if self._working_set_permissions is None:
+			self._working_set_permissions = WorkingSetPermissionService(self._client)
+		return self._working_set_permissions
+	
+	@property
+	def working_sets(self) -> WorkingSetService:
+		if self._working_sets is None:
+			self._working_sets = WorkingSetService(self._client)
+		return self._working_sets
+	
 
 	def get_users(self, page: int = 0, page_size: int = 25) -> list[User]:
 		"""Fetches all the users in the system.
