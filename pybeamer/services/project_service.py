@@ -12,7 +12,7 @@ class ProjectService:
 	##################
 	# Default Method #
 	##################
-	def __call__(self, *, project: str | int = None) -> list[Project]:
+	def __call__(self, *, project: str | int = None) -> list[Project] | Project:
 		if project:
 			return self.get_project(project)
 		return self.get_projects()

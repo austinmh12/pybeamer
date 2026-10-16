@@ -14,10 +14,8 @@ class TrackerService:
 	##################
 	# Default Method #
 	##################
-	def __call__(self, *, project: str | int = None) -> list[Project]:
-		if project:
-			return self.get_project(project)
-		return self.get_projects()
+	def __call__(self, tracker: str | int = None) -> Tracker | None:
+		return self.get_tracker(tracker)
 
 	############
 	# Trackers #
