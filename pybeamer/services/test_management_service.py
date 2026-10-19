@@ -5,3 +5,8 @@ class TestManagementService:
 
 	def __init__(self, client: APIClient):
 		self._client = client
+
+	#############
+	# Endpoints #
+	#############
+	def auto_apply_step_reuses(self, **kwargs): ... # TODO: args
