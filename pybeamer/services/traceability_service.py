@@ -5,3 +5,9 @@ class TraceabilityService:
 
 	def __init__(self, client: APIClient):
 		self._client = client
+
+	#############
+	# Endpoints #
+	#############
+	def get_traceability_items(self): ...
+	def get_traceability_relations(self): ...
