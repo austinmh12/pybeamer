@@ -1,6 +1,20 @@
 # codeBeamer Python API Wrapper
 * TODO: Badges
 
+# Rewrite Branch
+This branch is for rewriting my original start of this API wrapper to the service based approach that I saw in [stellaf's](https://github.com/stellaf) fork of the library. It aims to thin the `Codebeamer` class to just hold the client and a number of services that expose similar groupings of API endpoints (such as all `/v3/projects` endpoints in the `ProjectService` class). The goals of this branch are as follows:
+- Restructure the project to include a `setup.py` for installing via `pip` (done)
+- Implement the skeleton of all the `*Service` classes (done)
+- Move existing models into a `models` module (done)
+- Implement rework the existing models to the new lazy loading method
+- Rework existing models to defer additional API calls to relevant services
+- Move existing implemented endpoints from `Codebeamer` class to the relavent services
+- Skeleton out all additional models the library needs
+
+Things that are not a goal of this branch but will be worked on after this one is merged to trunk:
+- Implementing all the endpoints
+- Implementing all the models
+
 ## What is it?
 The **pybeamer** library provides a **simple** way to interact with codeBeamer's REST API using Python. It is based on codeBeamer's swagger v3 version of the API.
 
