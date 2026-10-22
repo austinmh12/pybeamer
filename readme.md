@@ -9,11 +9,10 @@ This branch is for rewriting my original start of this API wrapper to the servic
 - Implement rework the existing models to the new lazy loading method
 - Rework existing models to defer additional API calls to relevant services
 - Move existing implemented endpoints from `Codebeamer` class to the relavent services
-- Skeleton out all additional models the library needs
 
 Things that are not a goal of this branch but will be worked on after this one is merged to trunk:
 - Implementing all the endpoints
-- Implementing all the models
+- Implementing all the models (will be done as the endpoints that return or use them are implemented)
 
 ## What is it?
 The **pybeamer** library provides a **simple** way to interact with codeBeamer's REST API using Python. It is based on codeBeamer's swagger v3 version of the API.
